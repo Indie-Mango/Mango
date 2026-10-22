@@ -1,5 +1,6 @@
 #pragma once
 #include "Mango/Base/Event.hpp"
+#include "Mango/Base/Window.hpp"
 #include "Mango/Memory/Arena.hpp"
 
 #include <string>
@@ -26,15 +27,15 @@ namespace Mango {
         void Run();
 
         Arena& GetArena() const { return m_Arena; }
-
         EventBus& GetEventBus() { return m_EventBus; }
 
     private:
         std::vector<std::string> m_Args;
+
         Arena& m_Arena;
-
-        Application* m_App;
-
         EventBus m_EventBus;
+
+        Application* m_App = nullptr;
+        Window* m_Window = nullptr;
     };
 } // namespace Mango

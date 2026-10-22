@@ -2,37 +2,31 @@
 
 #include <iostream>
 
-struct NameEvent
-{
-    std::string Name;
-};
-
-class Sandbox : public Mango::Application
-{
-public:
-    Sandbox(Mango::Engine* engine) : Application(engine)
+namespace {
+    class Sandbox : public Mango::Application
     {
-        con = engine->GetEventBus().Connect<NameEvent>([](const NameEvent& e) {
-            std::cout << e.Name << "\n";
-            return Mango::EventState::Continue;
-        });
-    }
+    public:
+        Sandbox(Mango::Engine* engine) : Application(engine)
+        {
+            windowClosedConnection =
+                    engine->GetEventBus().Connect<Mango::WindowClosedEvent>([this](const Mango::WindowClosedEvent& e) {
+                        m_Running = false;
+                        return Mango::EventState::Continue;
+                    });
+        }
 
-    void Update() override
+        void Update(Mango::F32 ts) override {}
+
+        void Render(Mango::F32 ts) const override {}
+
+    private:
+        Mango::EventConnection<Mango::WindowClosedEvent> windowClosedConnection;
+    };
+
+    Mango::Application* CreateApp(Mango::Engine* engine, [[maybe_unused]] const std::vector<std::string>& args)
     {
-        //
-        m_Engine->GetEventBus().Emit<NameEvent>(NameEvent{"hello"});
+        return new Sandbox(engine);
     }
-
-    void Render() const override {}
-
-private:
-    Mango::EventConnection<NameEvent> con;
-};
-
-Mango::Application* CreateApp(Mango::Engine* engine, [[maybe_unused]] const std::vector<std::string>& args)
-{
-    return new Sandbox(engine);
-}
+} // namespace
 
 int main(int argc, char** argv) { return Mango::Main::Run(argc, argv, CreateApp); }

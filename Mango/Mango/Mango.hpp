@@ -1,10 +1,13 @@
 #pragma once
 
-#include "Mango/Main/Main.hpp"
-#include "Mango/Main/Engine.hpp"
 #include "Mango/Main/Application.hpp"
+#include "Mango/Main/Engine.hpp"
+#include "Mango/Main/Main.hpp"
 
 #include "Mango/Core/Core.hpp"
+
+#include "Mango/Base/Event.hpp"
+#include "Mango/Base/Window.hpp"
 
 #include "Mango/Memory/Arena.hpp"
 

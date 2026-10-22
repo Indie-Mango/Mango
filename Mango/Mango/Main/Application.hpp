@@ -1,4 +1,5 @@
 #pragma once
+#include "Mango/Common/CommonTypes.hpp"
 
 namespace Mango {
     class Engine;
@@ -10,8 +11,8 @@ namespace Mango {
 
         virtual ~Application() = default;
 
-        virtual void Update() = 0;
-        virtual void Render() const = 0;
+        virtual void Update(F32 ts) = 0;
+        virtual void Render(F32 ts) const = 0;
 
         bool IsRunning() const { return m_Running; }
 

@@ -7,6 +7,7 @@ AlignConsecutiveDeclarations: false
 AlignOperands: true
 AlignTrailingComments: false
 AlwaysBreakTemplateDeclarations: Yes
+AllowShortFunctionsOnASingleLine: All
 BraceWrapping:
   AfterCaseLabel: false
   AfterClass: true
@@ -53,7 +54,7 @@ SpacesInAngles: false
 SpacesInConditionalStatement: false
 SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false
-SeparateDefinitionBlocks: Always
+SeparateDefinitionBlocks: Leave
 
 TabWidth: 4
 ...
