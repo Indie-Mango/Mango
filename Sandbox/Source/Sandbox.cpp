@@ -17,7 +17,7 @@ namespace {
 
         void Update(Mango::F32 ts) override {}
 
-        void Render(Mango::F32 ts) const override {}
+        void Render(Mango::F32 ts, Mango::Renderer* renderer) const override {}
 
     private:
         Mango::EventConnection<Mango::WindowClosedEvent> windowClosedConnection;

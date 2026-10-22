@@ -34,7 +34,12 @@ namespace Mango {
 
             m_App->Update(ts.Time);
 
-            // TODO: Render
+            if (!m_Window->IsMinimized() && m_Renderer->BeginFrame())
+            {
+                m_App->Render(ts.Time, m_Renderer);
+                m_Renderer->EndFrame();
+            }
+
             WindowContext::PollEvents();
             m_EventBus.Update();
         }

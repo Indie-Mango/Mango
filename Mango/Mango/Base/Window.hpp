@@ -41,7 +41,9 @@ namespace Mango {
         void Close() const;
         bool IsOpen() const { return m_Data.Open; }
         bool IsFocused() const { return m_Data.Focused; }
-        
+
+        bool IsMinimized() const { return m_Data.Minimized; }
+
         GLFWwindow* GetNativeWindow() const;
 
     private:
