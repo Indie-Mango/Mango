@@ -16,6 +16,8 @@ namespace Mango {
             m_App->Update();
             
             // TODO: Render
+            
+            m_EventBus.Update();
         }
     }
 } // namespace Mango
