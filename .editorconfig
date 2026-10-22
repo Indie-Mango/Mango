@@ -1,0 +1,4 @@
+root = true
+
+[*.{cpp,hpp,h,cc,cxx}]
+resharper_cpp_clang_tidy_clang_diagnostic_pragma_pack_highlighting = none

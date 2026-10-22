@@ -1,9 +1,9 @@
 target("Mango-Engine")
     set_kind("static")
-    add_files("Source/**.cpp")
-    add_includedirs("Source", {public = true})
+    add_files("Mango/**.cpp")
+    add_headerfiles("Mango/**.hpp", {install = false})
+    add_includedirs(".", {public = true})
 
-target("Mango-Entry")
-    set_kind("object")
-    add_files("Source/Main.cpp")
-    add_includedirs("Source", {public = true})
+    if is_mode("debug") then
+        add_defines("MANGO_DEBUG")
+    end

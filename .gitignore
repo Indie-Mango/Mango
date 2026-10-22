@@ -1,5 +1,17 @@
+# Xmake build files
 /.xmake
 /build
+/.vscode
 compile_commands.json
 
-/.idea
+# Generated Visual Studio projects
+/.vs
+/vs2022
+/vsxmake2022
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# JetBrains
+.idea/
