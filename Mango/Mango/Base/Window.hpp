@@ -1,7 +1,6 @@
 ﻿#pragma once
 #include "Mango/Common/CommonTypes.hpp"
 
-#include <GLFW/glfw3.h>
 #include <string>
 
 struct GLFWwindow;
@@ -42,6 +41,8 @@ namespace Mango {
         void Close() const;
         bool IsOpen() const { return m_Data.Open; }
         bool IsFocused() const { return m_Data.Focused; }
+        
+        GLFWwindow* GetNativeWindow() const;
 
     private:
         void SetEventCallbackFunctions() const;

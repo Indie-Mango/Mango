@@ -1,3 +1,7 @@
+add_requires("vulkan-hpp")
+add_requires("vulkan-loader")
+add_requires("vk-bootstrap")
+
 add_requires("glfw")
 
 target("Mango-Engine")
@@ -6,6 +10,7 @@ target("Mango-Engine")
     add_headerfiles("Mango/**.hpp", {install = false})
     add_includedirs(".", {public = true})
 
+    add_packages("vulkan-hpp", "vulkan-loader", "vk-bootstrap", {public = true})
     add_packages("glfw", {public = true})
 
     if is_mode("debug") then

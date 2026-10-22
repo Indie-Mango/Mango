@@ -14,12 +14,12 @@ namespace Mango {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         m_Window = glfwCreateWindow(static_cast<int>(m_Data.Width), static_cast<int>(m_Data.Height), m_Data.Title.c_str(), nullptr,
                                     nullptr);
-        
+
         ASSERT(m_Window, "Failed to create window");
 
         glfwGetWindowPos(m_Window, &m_Data.XPos, &m_Data.YPos);
         glfwSetWindowUserPointer(m_Window, &m_Data);
-        
+
         SetEventCallbackFunctions();
     }
 
@@ -65,6 +65,8 @@ namespace Mango {
 
     void Window::Close() const { glfwDestroyWindow(m_Window); }
 
+    GLFWwindow* Window::GetNativeWindow() const { return m_Window; }
+
     void Window::SetEventCallbackFunctions() const
     {
         glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window) {
@@ -92,7 +94,7 @@ namespace Mango {
             data->Focused = focused;
             data->EventBus->Emit(WindowFocusedEvent{data->Self});
         });
-        
+
         glfwSetWindowIconifyCallback(m_Window, [](GLFWwindow* window, int iconified) {
             Data* data = static_cast<Data*>(glfwGetWindowUserPointer(window));
             data->Minimized = iconified;

@@ -9,6 +9,8 @@
 #include "Mango/Base/Event.hpp"
 #include "Mango/Base/Window.hpp"
 
+#include "Mango/Renderer/Renderer.hpp"
+
 #include "Mango/Memory/Arena.hpp"
 
 #include "Mango/Common/CommonTypes.hpp"
