@@ -20,7 +20,8 @@ def main():
         [
             "xmake", "project",
             "-k", GENERATOR,
-            "-m", "debug,release"
+            "-m", "debug,release",
+            "-vD"
         ],
         cwd=ROOT,
         check=True
