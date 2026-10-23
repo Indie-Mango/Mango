@@ -4,12 +4,12 @@
 #include "Mango/Renderer/Renderer.hpp"
 
 namespace Mango {
-    Engine::Engine(std::vector<std::string>&& args, Arena& arena, AppCreateFunc appCreateFn) : m_Arena(arena), m_Args(std::move(args))
+    Engine::Engine(std::vector<std::string>&& args, Arena& arena, AppCreateFunc appCreateFn) : m_Args(std::move(args)), m_Arena(arena)
     {
         WindowContext::Create();
         m_Window = m_Arena.Create<Window>(this, WindowInfo{});
 
-        m_Renderer = m_Arena.Create<Renderer>(m_Window);
+        m_Renderer = m_Arena.Create<Renderer>(m_Window, m_EventBus);
 
         m_App = appCreateFn(this, m_Args);
     }

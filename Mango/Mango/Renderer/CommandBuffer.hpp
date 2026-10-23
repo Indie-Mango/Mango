@@ -16,12 +16,14 @@ namespace Mango {
         CommandBuffer(CommandBuffer&& other) noexcept;
 
         CommandBuffer& operator=(CommandBuffer&& other) noexcept;
-        
+
         void Begin();
         void End();
-        
+
         void BeginRendering(vk::ImageView imageView, vk::Extent2D extent);
         void EndRendering();
+
+        vk::CommandBuffer Raw() const { return m_Buffer; }
 
     private:
         vk::Device m_Device = nullptr;

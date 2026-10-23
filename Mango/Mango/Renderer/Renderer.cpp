@@ -1,39 +1,163 @@
-﻿#include "Renderer.hpp"
+﻿#define GLFW_INCLUDE_VULKAN
+#include "Renderer.hpp"
 
+#include "Mango/Base/Event.hpp"
 #include "Mango/Core/Core.hpp"
 
-#define GLFW_INCLUDE_VULKAN
+#include "Mango/Graphics/Image.hpp"
+#include "Mango/Graphics/VkUtils.hpp"
+
 #include <GLFW/glfw3.h>
 
-#include <VkBootstrap.h>
 #include <iostream>
 
 namespace Mango {
-    Renderer::Renderer(const Window* window) { InitVulkan(window->GetNativeWindow()); }
+    Renderer::Renderer(const Window* window, EventBus& eventBus)
+    {
+        InitVulkan(window->GetNativeWindow());
+        auto available = m_PhysicalDevice.getSurfaceFormatsKHR(m_Surface).value;
+        vk::SurfaceFormatKHR surfaceFormat = VkUtils::PickSurfaceFormat(available);
+        m_Swapchain = Unique<Swapchain>::Create(m_VkbDevice, window->GetWidth(), window->GetHeight(), surfaceFormat);
+        m_TargetImage = Shared<Image>::Create(window->GetWidth(), window->GetHeight(), m_Swapchain->GetFormat().format,
+                                              vk::ImageAspectFlagBits::eColor,
+                                              vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment,
+                                              m_Device, m_PhysicalDevice, vk::MemoryPropertyFlagBits::eDeviceLocal, nullptr, this);
+        m_WindowResizedConnection = eventBus.Connect<WindowResizedEvent>([this](const WindowResizedEvent& e) {
+            m_Swapchain->Recreate(m_VkbDevice, e.Window->GetWidth(), e.Window->GetHeight());
+            return EventState::Continue;
+        });
+    }
 
-    Renderer::~Renderer() { ShutdownVulkan(); }
+    Renderer::~Renderer()
+    {
+        vk::Result waitRes = m_Device.waitIdle();
+        ASSERT(waitRes == vk::Result::eSuccess, "Failed to wait for device idle");
+
+        m_TargetImage.Reset();
+
+        ShutdownVulkan();
+    }
 
     bool Renderer::BeginFrame()
     {
-        vk::Result waitRes = m_Device.waitIdle(); // TODO: Remove
-        ASSERT(waitRes == vk::Result::eSuccess, "Failed to wait for device idle");
-        m_Commandbuffer.Begin();
-        
-        // TODO: m_CommandBuffer.BeginRendering
-        
+        vk::Result fenceRes = m_Device.waitForFences(m_RenderFence, vk::True, std::numeric_limits<U64>::max());
+        ASSERT(fenceRes == vk::Result::eSuccess, "Failed to wait for fence");
+
+        bool validSwapchain = false;
+        std::tie(validSwapchain, m_CurrentSwapchainImage, m_CurrenSwapchainImageIdx) = m_Swapchain->NextImage();
+        if (!validSwapchain)
+        {
+            return false;
+        }
+
+        m_GraphicsCommandbuffer.Begin();
+
+        m_TargetImage->TransitionLayout(m_GraphicsCommandbuffer.Raw(), vk::ImageLayout::eUndefined,
+                                        vk::ImageLayout::eColorAttachmentOptimal, vk::PipelineStageFlagBits2::eNone,
+                                        vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eNone,
+                                        vk::AccessFlagBits2::eColorAttachmentWrite);
+
+        m_GraphicsCommandbuffer.BeginRendering(m_TargetImage->GetView(), {m_TargetImage->GetWidth(), m_TargetImage->GetHeight()});
+
         return true;
     }
 
     void Renderer::EndFrame()
     {
-        // TODO: m_CommandBuffer.EndRendering
-        m_Commandbuffer.End();
+        m_GraphicsCommandbuffer.EndRendering();
+
+        m_TargetImage->TransitionLayout(m_GraphicsCommandbuffer.Raw(), vk::ImageLayout::eColorAttachmentOptimal,
+                                        vk::ImageLayout::eTransferSrcOptimal, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                        vk::PipelineStageFlagBits2::eTransfer, vk::AccessFlagBits2::eColorAttachmentWrite,
+                                        vk::AccessFlagBits2::eTransferRead);
+
+        VkUtils::TransitionImageLayout(m_GraphicsCommandbuffer.Raw(), vk::ImageLayout::eUndefined,
+                                       vk::ImageLayout::eTransferDstOptimal, vk::PipelineStageFlagBits2::eNone,
+                                       vk::PipelineStageFlagBits2::eTransfer, vk::AccessFlagBits2::eNone,
+                                       vk::AccessFlagBits2::eTransferWrite, vk::ImageAspectFlagBits::eColor, m_CurrentSwapchainImage);
+
+        vk::ImageCopy region;
+        region.srcSubresource.layerCount = 1;
+        region.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+        region.dstSubresource.layerCount = 1;
+        region.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+        region.extent = vk::Extent3D{m_TargetImage->GetWidth(), m_TargetImage->GetHeight(), 1};
+        m_GraphicsCommandbuffer.Raw().copyImage(m_TargetImage->GetImage(), vk::ImageLayout::eTransferSrcOptimal,
+                                                m_CurrentSwapchainImage, vk::ImageLayout::eTransferDstOptimal, region);
+
+        VkUtils::TransitionImageLayout(m_GraphicsCommandbuffer.Raw(), vk::ImageLayout::eTransferDstOptimal,
+                                       vk::ImageLayout::ePresentSrcKHR, vk::PipelineStageFlagBits2::eTransfer,
+                                       vk::PipelineStageFlagBits2::eNone, vk::AccessFlagBits2::eTransferWrite,
+                                       vk::AccessFlagBits2::eNone, vk::ImageAspectFlagBits::eColor, m_CurrentSwapchainImage);
+
+        m_GraphicsCommandbuffer.End();
+
+        vk::CommandBuffer cmd = m_GraphicsCommandbuffer.Raw();
+
+        vk::Semaphore imageAvailable = m_Swapchain->IsImageAvailable();
+
+        vk::Semaphore renderFinished = m_Swapchain->IsRenderFinished(m_CurrenSwapchainImageIdx);
+
+        vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eTransfer;
+
+        vk::SubmitInfo submission{};
+        submission.waitSemaphoreCount = 1;
+        submission.pWaitSemaphores = &imageAvailable;
+        submission.pWaitDstStageMask = &waitStage;
+
+        submission.commandBufferCount = 1;
+        submission.pCommandBuffers = &cmd;
+
+        submission.signalSemaphoreCount = 1;
+        submission.pSignalSemaphores = &renderFinished;
+
+        vk::Result fenceRes = m_Device.resetFences(m_RenderFence);
+        ASSERT(fenceRes == vk::Result::eSuccess, "Failed to reset fence");
+
+        vk::Result res = m_GraphicsQueue.submit(submission, m_RenderFence);
+
+        ASSERT(res == vk::Result::eSuccess, "Failed to submit graphics queue");
+
+        // Present
+        vk::SwapchainKHR swapchain = m_Swapchain->Raw();
+
+        vk::PresentInfoKHR presentInfo{};
+        presentInfo.waitSemaphoreCount = 1;
+        presentInfo.pWaitSemaphores = &renderFinished;
+        presentInfo.swapchainCount = 1;
+        presentInfo.pSwapchains = &swapchain;
+        presentInfo.pImageIndices = &m_CurrenSwapchainImageIdx;
+
+        vk::Result presentResult = m_PresentQueue.presentKHR(presentInfo);
+        ASSERT(presentResult == vk::Result::eSuccess || presentResult == vk::Result::eSuboptimalKHR,
+               "Failed to present swapchain image");
+    }
+
+    void Renderer::SubmitTransfer(const vk::SubmitInfo& submission) const
+    {
+        vk::Result res = m_TransferQueue.submit(submission, m_TransferFence);
+        ASSERT(res == vk::Result::eSuccess, "Failed to submit transfer command buffer to queue");
+    }
+
+    vk::CommandBuffer Renderer::GetTransferCommandBufferRaw() const
+    {
+        vk::Result waitRes = m_Device.waitForFences(m_TransferFence, vk::True, std::numeric_limits<U64>::max());
+        ASSERT(waitRes == vk::Result::eSuccess, "Failed to wait for transfer operation complete");
+
+        vk::Result resetFenceRes = m_Device.resetFences(m_TransferFence);
+        ASSERT(resetFenceRes == vk::Result::eSuccess, "Failed to reset transfer fence");
+
+        return m_TransferCommandBuffer.Raw();
     }
 
     void Renderer::InitVulkan(GLFWwindow* window)
     {
         vkb::InstanceBuilder builder;
-        auto instanceRes = builder.set_app_name("Mango").request_validation_layers().use_default_debug_messenger().build();
+        auto instanceRes = builder.set_app_name("Mango")
+                                   .require_api_version(1, 4, 0)
+                                   .request_validation_layers()
+                                   .use_default_debug_messenger()
+                                   .build();
         ASSERT(instanceRes, "Failed to create instance");
 
         vkb::Instance vkbInstance = instanceRes.value();
@@ -45,8 +169,7 @@ namespace Mango {
         if (VkResult _ = glfwCreateWindowSurface(m_Instance, window, nullptr, &rawSurface))
         {
             const char* msg;
-            int res = glfwGetError(&msg);
-            if (res != 0)
+            if (int res = glfwGetError(&msg); res != 0)
             {
                 std::cout << res << " ";
                 if (msg != nullptr)
@@ -60,7 +183,14 @@ namespace Mango {
         m_Surface = rawSurface;
 
         vkb::PhysicalDeviceSelector selector{vkbInstance};
-        auto physRes = selector.set_surface(rawSurface).set_minimum_version(1, 4).require_dedicated_transfer_queue().select();
+        vk::PhysicalDeviceVulkan13Features requiredFeatures;
+        requiredFeatures.dynamicRendering = vk::True;
+        requiredFeatures.synchronization2 = vk::True;
+        auto physRes = selector.set_surface(rawSurface)
+                               .set_minimum_version(1, 4)
+                               .set_required_features_13(requiredFeatures)
+                               .require_dedicated_transfer_queue()
+                               .select();
         ASSERT(physRes, physRes.error().message());
 
         const vkb::PhysicalDevice& vkbPd = physRes.value();
@@ -70,44 +200,70 @@ namespace Mango {
         auto devRes = deviceBuilder.build();
         ASSERT(devRes, "Failed to build device");
 
-        const vkb::Device& vkbDevice = devRes.value();
-        m_Device = vkbDevice.device;
+        m_VkbDevice = devRes.value();
+        m_Device = m_VkbDevice.device;
 
-        auto graphicsQueueRes = vkbDevice.get_queue_and_index(vkb::QueueType::graphics);
-        ASSERT(graphicsQueueRes, "Failed to get graphics queue");
-        m_GraphicsQueue = graphicsQueueRes.value().first;
-        m_GraphicsQueueFamilyIdx = graphicsQueueRes.value().second;
+        {
+            auto graphicsQueueRes = m_VkbDevice.get_queue_and_index(vkb::QueueType::graphics);
+            ASSERT(graphicsQueueRes, "Failed to get graphics queue");
+            m_GraphicsQueue = graphicsQueueRes.value().first;
+            m_GraphicsQueueFamilyIdx = graphicsQueueRes.value().second;
+        }
 
-        auto presentQueueRes = vkbDevice.get_queue_and_index(vkb::QueueType::present);
-        ASSERT(presentQueueRes, "Failed to get graphics queue");
-        m_PresentQueue = graphicsQueueRes.value().first;
-        m_PresentQueueFamilyIdx = graphicsQueueRes.value().second;
+        {
+            auto presentQueueRes = m_VkbDevice.get_queue_and_index(vkb::QueueType::present);
+            ASSERT(presentQueueRes, "Failed to get graphics queue");
+            m_PresentQueue = presentQueueRes.value().first;
+            m_PresentQueueFamilyIdx = presentQueueRes.value().second;
+        }
 
-        auto transferQueueRes = vkbDevice.get_queue_and_index(vkb::QueueType::transfer);
-        ASSERT(transferQueueRes, "Failed to get graphics queue");
-        m_TransferQueue = transferQueueRes.value().first;
-        m_TransferQueueFamilyIdx = transferQueueRes.value().second;
+        {
+            auto transferQueueRes = m_VkbDevice.get_queue_and_index(vkb::QueueType::transfer);
+            ASSERT(transferQueueRes, "Failed to get graphics queue");
+            m_TransferQueue = transferQueueRes.value().first;
+            m_TransferQueueFamilyIdx = transferQueueRes.value().second;
+        }
 
         vk::CommandPoolCreateInfo commandPoolInfo;
         commandPoolInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
         commandPoolInfo.queueFamilyIndex = m_GraphicsQueueFamilyIdx;
-        vk::Result cmdPoolRes = m_Device.createCommandPool(&commandPoolInfo, nullptr, &m_CommandPool);
+        vk::Result cmdPoolRes = m_Device.createCommandPool(&commandPoolInfo, nullptr, &m_GraphicsCommandPool);
         ASSERT(cmdPoolRes == vk::Result::eSuccess, "Failed to create command pool");
 
-        m_Commandbuffer = CommandBuffer{m_Device, m_CommandPool};
+        m_GraphicsCommandbuffer = CommandBuffer{m_Device, m_GraphicsCommandPool};
+
+        commandPoolInfo.queueFamilyIndex = m_TransferQueueFamilyIdx;
+        cmdPoolRes = m_Device.createCommandPool(&commandPoolInfo, nullptr, &m_TransferCommandPool);
+        ASSERT(cmdPoolRes == vk::Result::eSuccess, "Failed to create command pool");
+        m_TransferCommandBuffer = CommandBuffer{m_Device, m_TransferCommandPool};
+
+        vk::FenceCreateInfo fenceInfo;
+        fenceInfo.flags = vk::FenceCreateFlagBits::eSignaled;
+        vk::ResultValue<vk::Fence> fence = m_Device.createFence(fenceInfo);
+        ASSERT(fence.result == vk::Result::eSuccess, "Failed to create fence");
+        m_TransferFence = fence.value;
+
+        fence = m_Device.createFence(fenceInfo);
+        ASSERT(fence.result == vk::Result::eSuccess, "Failed to create fence");
+        m_RenderFence = fence.value;
     }
 
     void Renderer::ShutdownVulkan()
     {
-        vk::Result waitRes = m_Device.waitIdle();
-        ASSERT(waitRes == vk::Result::eSuccess, "Failed to wait for device idle");
-
         m_GraphicsQueueFamilyIdx = ~0;
         m_PresentQueueFamilyIdx = ~0;
         m_TransferQueueFamilyIdx = ~0;
 
-        m_Commandbuffer = CommandBuffer{};
-        m_Device.destroyCommandPool(m_CommandPool);
+        m_Swapchain.Reset();
+
+        m_Device.destroyFence(m_RenderFence);
+
+        m_Device.destroyFence(m_TransferFence);
+        m_TransferCommandBuffer = CommandBuffer{};
+        m_Device.destroyCommandPool(m_TransferCommandPool);
+
+        m_GraphicsCommandbuffer = CommandBuffer{};
+        m_Device.destroyCommandPool(m_GraphicsCommandPool);
 
         m_Device.destroy();
         m_Instance.destroySurfaceKHR(m_Surface);

@@ -15,7 +15,7 @@ namespace Mango {
             args[i] = argv[i];
         }
 
-        Arena arena(2048);
+        Arena arena(1'000'000);
         s_Engine = arena.Create<Engine>(std::move(args), arena, appCreateFn);
         s_Engine->Run();
         arena.Destroy(s_Engine);
