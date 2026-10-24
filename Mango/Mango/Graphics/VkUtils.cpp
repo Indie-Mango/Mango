@@ -15,7 +15,7 @@ namespace Mango {
 
         ASSERT(false, "Failed to find suitable memory type index");
     }
-    
+
     vk::SurfaceFormatKHR VkUtils::PickSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats)
     {
         assert(!availableFormats.empty());
@@ -25,7 +25,7 @@ namespace Mango {
 
         return formatIt != availableFormats.end() ? *formatIt : availableFormats[0];
     }
-    
+
     void VkUtils::TransitionImageLayout(vk::CommandBuffer commandBuffer, vk::ImageLayout from, vk::ImageLayout to,
                                         vk::PipelineStageFlags2 srcStage, vk::PipelineStageFlags2 dstStage, vk::AccessFlags2 srcAccess,
                                         vk::AccessFlags2 dstAccess, vk::ImageAspectFlags aspect, vk::Image image)

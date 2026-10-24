@@ -11,6 +11,7 @@ target("Mango-Engine")
     add_includedirs(".", {public = true})
 
     add_packages("vulkan-hpp", "vulkan-loader", "vk-bootstrap", {public = true})
+    add_defines("VULKAN_HPP_NO_EXCEPTIONS")
     add_packages("glfw", {public = true})
 
     if is_mode("debug") then

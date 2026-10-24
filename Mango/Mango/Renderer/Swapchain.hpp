@@ -1,8 +1,6 @@
 ﻿#pragma once
 #include "Mango/Common/CommonTypes.hpp"
-#include "Mango/Core/Core.hpp"
 
-#define VULKAN_HPP_NO_EXCEPTIONS
 #include <VkBootstrap.h>
 #include <vulkan/vulkan.hpp>
 

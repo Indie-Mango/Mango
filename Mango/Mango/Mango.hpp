@@ -11,6 +11,10 @@
 
 #include "Mango/Renderer/Renderer.hpp"
 
+#include "Mango/Graphics/Image.hpp"
+#include "Mango/Graphics/IndexBuffer.hpp"
+#include "Mango/Graphics/VertexBuffer.hpp"
+
 #include "Mango/Memory/Arena.hpp"
 
 #include "Mango/Common/CommonTypes.hpp"

@@ -1,9 +1,6 @@
 ﻿#pragma once
 #include "Mango/Common/CommonTypes.hpp"
 
-#define VULKAN_HPP_NO_EXCEPTIONS
-#include "Mango/Memory/Smart.hpp"
-
 #include <vulkan/vulkan.hpp>
 
 namespace Mango {

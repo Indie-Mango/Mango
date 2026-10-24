@@ -32,7 +32,7 @@ namespace Mango {
     Swapchain::~Swapchain()
     {
         m_Device.destroySemaphore(m_ImageAvailable);
-        
+
         for (U32 i = 0; i < m_Swapchain.image_count; i++)
         {
             m_Device.destroySemaphore(m_RenderFinished[i]);

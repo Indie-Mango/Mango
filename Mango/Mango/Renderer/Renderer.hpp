@@ -7,7 +7,6 @@
 #include "Mango/Memory/Smart.hpp"
 #include "Mango/Renderer/Swapchain.hpp"
 
-#define VULKAN_HPP_NO_EXCEPTIONS
 #include <VkBootstrap.h>
 #include <vulkan/vulkan.hpp>
 
