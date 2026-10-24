@@ -15,6 +15,8 @@
 #include "Mango/Graphics/IndexBuffer.hpp"
 #include "Mango/Graphics/VertexBuffer.hpp"
 
+#include "Mango/Math/Math.hpp"
+
 #include "Mango/Memory/Arena.hpp"
 
 #include "Mango/Common/CommonTypes.hpp"
