@@ -6,7 +6,7 @@ namespace Mango::Math {
 
     F32 Radians(F32 degrees);
     F32 Degrees(F32 radians);
-    
+
     F32 Sin(F32 radians);
     F32 Cos(F32 radians);
 } // namespace Mango::Math

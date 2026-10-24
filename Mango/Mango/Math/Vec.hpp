@@ -95,7 +95,7 @@ namespace Mango::Math {
 
         void Normalize();
     };
-    
+
     using Vec2 = Vec<F32, 2>;
     using Vec3 = Vec<F32, 3>;
     using Vec4 = Vec<F32, 4>;

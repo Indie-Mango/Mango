@@ -7,7 +7,7 @@
     {                                                                                                                                 \
         if (!(expr))                                                                                                                  \
         {                                                                                                                             \
-            std::cout << msg << "\n";                                                                                                 \
+            std::cout << msg << std::endl;                                                                                            \
             std::abort();                                                                                                             \
         }                                                                                                                             \
     } while (false)

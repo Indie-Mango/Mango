@@ -1,9 +1,9 @@
-﻿#include "Swapchain.hpp"
+﻿#include "VkSwapchain.hpp"
 
 #include "Mango/Core/Core.hpp"
 
-namespace Mango {
-    Swapchain::Swapchain(const vkb::Device& d, U32 width, U32 height, vk::SurfaceFormatKHR format) : m_Device(d), m_Format(format)
+namespace Mango::Driver::Vulkan {
+    VkSwapchain::VkSwapchain(const vkb::Device& d, U32 width, U32 height, vk::SurfaceFormatKHR format) : m_Device(d), m_Format(format)
     {
         vkb::SwapchainBuilder builder{d};
         vkb::Result<vkb::Swapchain> res = builder.set_desired_extent(width, height)
@@ -29,7 +29,7 @@ namespace Mango {
         }
     }
 
-    Swapchain::~Swapchain()
+    VkSwapchain::~VkSwapchain()
     {
         m_Device.destroySemaphore(m_ImageAvailable);
 
@@ -44,7 +44,7 @@ namespace Mango {
         vkb::destroy_swapchain(m_Swapchain);
     }
 
-    std::tuple<bool, vk::Image, U32> Swapchain::NextImage() const
+    std::tuple<bool, vk::Image, U32> VkSwapchain::NextImage() const
     {
         vk::ResultValue<U32> imageIdx =
                 m_Device.acquireNextImageKHR(m_Swapchain.swapchain, std::numeric_limits<U64>::max(), m_ImageAvailable);
@@ -57,7 +57,7 @@ namespace Mango {
         return {true, m_Images[imageIdx.value], imageIdx.value};
     }
 
-    void Swapchain::Recreate(const vkb::Device& d, U32 width, U32 height)
+    void VkSwapchain::Recreate(const vkb::Device& d, U32 width, U32 height)
     {
         vkb::SwapchainBuilder builder{d};
         vkb::Result<vkb::Swapchain> temp = builder.set_old_swapchain(m_Swapchain)
@@ -71,7 +71,7 @@ namespace Mango {
         GetImagesAndViews();
     }
 
-    void Swapchain::GetImagesAndViews()
+    void VkSwapchain::GetImagesAndViews()
     {
         for (auto imageView: m_ImageViews)
             m_Device.destroyImageView(imageView);
@@ -99,4 +99,4 @@ namespace Mango {
             m_ImageViews.push_back(view.value);
         }
     }
-} // namespace Mango
+}

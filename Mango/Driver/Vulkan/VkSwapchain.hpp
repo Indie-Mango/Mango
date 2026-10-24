@@ -4,18 +4,18 @@
 #include <VkBootstrap.h>
 #include <vulkan/vulkan.hpp>
 
-namespace Mango {
-    class Swapchain
+namespace Mango::Driver::Vulkan {
+    class VkSwapchain
     {
     public:
-        Swapchain(const vkb::Device& d, U32 width, U32 height, vk::SurfaceFormatKHR format);
-        ~Swapchain();
+        VkSwapchain(const vkb::Device& d, U32 width, U32 height, vk::SurfaceFormatKHR format);
+        ~VkSwapchain();
 
-        Swapchain(const Swapchain&) = delete;
-        Swapchain& operator=(const Swapchain&) = delete;
+        VkSwapchain(const VkSwapchain&) = delete;
+        VkSwapchain& operator=(const VkSwapchain&) = delete;
 
-        Swapchain(Swapchain&&) = delete;
-        Swapchain& operator=(Swapchain&&) = delete;
+        VkSwapchain(VkSwapchain&&) = delete;
+        VkSwapchain& operator=(VkSwapchain&&) = delete;
 
         vk::SwapchainKHR Raw() const { return m_Swapchain.swapchain; }
 
@@ -47,4 +47,4 @@ namespace Mango {
 
         U32 m_Width = 0, m_Height = 0;
     };
-} // namespace Mango
+} // namespace Mango::Driver::Vulkan

@@ -1,9 +1,9 @@
-﻿#include "CommandBuffer.hpp"
+﻿#include "VkCommandBuffer.hpp"
 
 #include "Mango/Core/Core.hpp"
 
-namespace Mango {
-    CommandBuffer::CommandBuffer(vk::Device d, vk::CommandPool cmdPool) : m_Device(d), m_CommandPool(cmdPool)
+namespace Mango::Driver::Vulkan {
+    VkCommandBuffer::VkCommandBuffer(vk::Device d, vk::CommandPool cmdPool) : m_Device(d), m_CommandPool(cmdPool)
     {
         vk::CommandBufferAllocateInfo allocInfo;
         allocInfo.commandPool = m_CommandPool;
@@ -13,19 +13,19 @@ namespace Mango {
         ASSERT(res == vk::Result::eSuccess, "Failed to allocate command buffers");
     }
 
-    CommandBuffer::~CommandBuffer()
+    VkCommandBuffer::~VkCommandBuffer()
     {
         if (m_Device)
             m_Device.freeCommandBuffers(m_CommandPool, 1u, &m_Buffer);
     }
 
-    CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept :
+    VkCommandBuffer::VkCommandBuffer(VkCommandBuffer&& other) noexcept :
         m_Device(std::exchange(other.m_Device, nullptr)), m_CommandPool(std::exchange(other.m_CommandPool, nullptr)),
         m_Buffer(std::exchange(other.m_Buffer, nullptr))
     {
     }
 
-    CommandBuffer& CommandBuffer::operator=(CommandBuffer&& other) noexcept
+    VkCommandBuffer& VkCommandBuffer::operator=(VkCommandBuffer&& other) noexcept
     {
         if (this == &other)
             return *this;
@@ -37,20 +37,20 @@ namespace Mango {
         return *this;
     }
 
-    void CommandBuffer::Begin()
+    void VkCommandBuffer::Begin() const
     {
         vk::CommandBufferBeginInfo beginInfo;
         vk::Result beginRes = m_Buffer.begin(beginInfo);
         ASSERT(beginRes == vk::Result::eSuccess, "Failed to begin recording command buffer");
     }
 
-    void CommandBuffer::End()
+    void VkCommandBuffer::End() const
     {
         vk::Result endRes = m_Buffer.end();
         ASSERT(endRes == vk::Result::eSuccess, "Failed to end command buffer");
     }
 
-    void CommandBuffer::BeginRendering(vk::ImageView imageView, vk::Extent2D extent)
+    void VkCommandBuffer::BeginRendering(vk::ImageView imageView, vk::Extent2D extent) const
     {
         vk::RenderingAttachmentInfo renderingAttachment;
         renderingAttachment.imageView = imageView;
@@ -68,5 +68,5 @@ namespace Mango {
         m_Buffer.beginRendering(renderingInfo);
     }
 
-    void CommandBuffer::EndRendering() { m_Buffer.endRendering(); }
-} // namespace Mango
+    void VkCommandBuffer::EndRendering() const { m_Buffer.endRendering(); }
+} // namespace Mango::Driver::Vulkan

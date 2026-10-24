@@ -1,9 +1,12 @@
 ﻿#pragma once
 #include "Mango/Common/CommonTypes.hpp"
+#include "Mango/Memory/Smart.hpp"
 
 #include <vulkan/vulkan.hpp>
 
 namespace Mango {
+    class Renderer;
+
     enum class VertexBufferElement : U8
     {
         Float,
@@ -46,9 +49,9 @@ namespace Mango {
     class VertexBuffer
     {
     public:
-        VertexBuffer(vk::PhysicalDevice pd, vk::Device d, vk::CommandBuffer transferCommandBuffer, const VertexBufferLayout& layout,
-                     USize vertexCount, const void* data);
-        ~VertexBuffer();
+        static Shared<VertexBuffer> Create(Renderer* renderer, const VertexBufferLayout& layout, U32 vertexCount, const void* data);
+
+        virtual ~VertexBuffer() = default;
 
         VertexBuffer(const VertexBuffer&) = delete;
         VertexBuffer& operator=(const VertexBuffer&) = delete;
@@ -56,27 +59,23 @@ namespace Mango {
         VertexBuffer(VertexBuffer&&) = delete;
         VertexBuffer& operator=(VertexBuffer&&) = delete;
 
-        void SetData(const void* data);
+        virtual void SetData(const void* data) = 0;
 
         const VertexBufferLayout& GetVertexBufferLayout() const { return m_Layout; }
-        USize GetVertexCount() const { return m_VertexCount; }
+
         USize GetSize() const { return m_Size; }
+        U32 GetVertexCount() const { return m_VertexCount; }
 
-    private:
-        vk::PhysicalDevice m_PhysicalDevice;
-        vk::Device m_Device;
+    protected:
+        VertexBuffer(const VertexBufferLayout& layout, U32 vertexCount) :
+            m_Layout(layout), m_VertexCount(vertexCount), m_Size(layout.Stride * vertexCount)
+        {
+        }
 
-        vk::CommandBuffer m_TransferCommandBuffer;
-
-        vk::Buffer m_Buffer;
-        vk::DeviceMemory m_Memory;
-
+    protected:
         VertexBufferLayout m_Layout;
 
-        USize m_VertexCount = 0;
         USize m_Size = 0;
-
-        vk::Buffer m_StagingBuffer;
-        vk::DeviceMemory m_StagingBufferMemory;
+        U32 m_VertexCount = 0;
     };
 } // namespace Mango

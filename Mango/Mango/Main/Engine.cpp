@@ -9,7 +9,7 @@ namespace Mango {
         WindowContext::Create();
         m_Window = m_Arena.Create<Window>(this, WindowInfo{});
 
-        m_Renderer = m_Arena.Create<Renderer>(m_Window, m_EventBus);
+        m_Renderer = Renderer::Create(m_Window, m_EventBus);
 
         m_App = appCreateFn(this, m_Args);
     }
@@ -18,7 +18,7 @@ namespace Mango {
     {
         delete m_App;
 
-        m_Arena.Destroy(m_Renderer);
+        delete m_Renderer;
 
         m_Arena.Destroy(m_Window);
         WindowContext::Destroy();
