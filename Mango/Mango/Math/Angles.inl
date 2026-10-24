@@ -2,9 +2,7 @@
 #include "Mango/Math/Angles.hpp"
 
 namespace Mango::Math {
-    inline F32 Radians(F32 degrees) { return degrees * (PI / 180); }
-
-    inline F32 Degrees(F32 radians) { return radians * (180 / PI); }
+    inline F32 Degrees(F32 radians) { return radians * (PI / 180); }
 
     inline F32 Sin(F32 radians)
     {
