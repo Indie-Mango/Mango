@@ -1,9 +1,11 @@
 #include "Engine.hpp"
 #include "Application.hpp"
 #include "Mango/Base/TimeStep.hpp"
+#include "Mango/ImGui/ImGuiContext.hpp"
 #include "Mango/Renderer/Renderer.hpp"
 
 #include <filesystem>
+#include <imgui.h>
 
 namespace Mango {
     Engine::Engine(std::vector<std::string>&& args, Arena& arena, AppCreateFunc appCreateFn) : m_Args(std::move(args)), m_Arena(arena)
@@ -19,6 +21,8 @@ namespace Mango {
 
         m_Renderer = Renderer::Create(m_Window, m_EventBus);
 
+        m_ImGuiContext = ImGuiContext::Create(m_Window, m_Renderer);
+
         m_App = appCreateFn(this, m_Args);
     }
 
@@ -27,6 +31,8 @@ namespace Mango {
         m_Renderer->WaitIdle();
 
         delete m_App;
+
+        delete m_ImGuiContext;
 
         delete m_Renderer;
 
@@ -47,6 +53,11 @@ namespace Mango {
             if (m_Window->CanRender() && m_Renderer->BeginFrame())
             {
                 m_App->Render(ts.Time, m_Renderer);
+
+                m_ImGuiContext->BeginFrame();
+                m_App->ImGuiRender(ts.Time);
+                m_ImGuiContext->EndFrame();
+
                 m_Renderer->EndFrame();
             }
 

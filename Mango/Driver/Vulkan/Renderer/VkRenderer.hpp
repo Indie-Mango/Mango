@@ -38,8 +38,15 @@ namespace Mango::Driver::Vulkan {
 
         void OnWindowResizeVk(const Window* window);
 
+        vk::Instance GetInstance() const { return m_Instance; }
         vk::PhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
         vk::Device GetDevice() const { return m_Device; }
+
+        VkSwapchain* GetSwapchain() const { return m_Swapchain.Raw(); }
+
+        U32 GetGraphicsQueueFamilyIdx() const { return m_GraphicsQueueFamilyIdx; }
+        vk::Queue GetGraphicsQueue() const { return m_GraphicsQueue; }
+        vk::CommandBuffer GetGraphicsCommandBufferRaw() const { return m_GraphicsCommandBuffer.Raw(); }
 
         void SubmitTransfer() const;
         U32 GetTransferQueueFamilyIdx() const { return m_TransferQueueFamilyIdx; }

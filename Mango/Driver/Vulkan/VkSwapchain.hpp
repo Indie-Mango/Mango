@@ -29,6 +29,8 @@ namespace Mango::Driver::Vulkan {
         vk::Semaphore IsImageAvailable() const { return m_ImageAvailable; }
         vk::Semaphore IsRenderFinished(U32 idx) const { return m_RenderFinished[idx]; }
 
+        U32 GetImageCount() const { return m_Images.size(); }
+
         U32 GetWidth() const { return m_Width; }
         U32 GetHeight() const { return m_Height; }
 

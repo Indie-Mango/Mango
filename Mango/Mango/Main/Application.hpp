@@ -14,6 +14,7 @@ namespace Mango {
 
         virtual void Update(F32 ts) = 0;
         virtual void Render(F32 ts, Renderer* renderer) const = 0;
+        virtual void ImGuiRender(F32 ts) const = 0;
 
         bool IsRunning() const { return m_Running; }
 

@@ -1,5 +1,7 @@
 #include "Mango/Mango.hpp"
 
+#include <imgui.h>
+
 namespace {
     class Sandbox : public Mango::Application
     {
@@ -43,6 +45,13 @@ namespace {
             renderer->SetIndexBuffer(m_IndexBuffer);
             renderer->SetPipeline(m_pipeline);
             renderer->DrawIndexed(m_IndexBuffer->GetIndexCount());
+        }
+
+        void ImGuiRender(Mango::F32 ts) const override
+        {
+            ImGui::Begin("Engine data");
+            ImGui::Value("Time step: ", ts);
+            ImGui::End();
         }
 
     private:

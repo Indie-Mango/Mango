@@ -21,9 +21,10 @@ namespace Mango::Driver::Vulkan {
         ~VkShaderCompiler();
 
         VkShaderCompiler(const VkShaderCompiler& other) = delete;
-        VkShaderCompiler(VkShaderCompiler&& other) noexcept = delete;
         VkShaderCompiler& operator=(const VkShaderCompiler& other) = delete;
-        VkShaderCompiler& operator=(VkShaderCompiler&& other) noexcept = delete;
+
+        VkShaderCompiler(VkShaderCompiler&& other) = delete;
+        VkShaderCompiler& operator=(VkShaderCompiler&& other) = delete;
 
         VkShaderModulePair CreateShaderModules(const std::string& vertShader, const std::string& fragShader) const;
 

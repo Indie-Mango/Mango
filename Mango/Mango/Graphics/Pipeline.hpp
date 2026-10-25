@@ -51,9 +51,10 @@ namespace Mango {
         virtual ~Pipeline() = default;
 
         Pipeline(const Pipeline& other) = delete;
-        Pipeline(Pipeline&& other) noexcept = delete;
         Pipeline& operator=(const Pipeline& other) = delete;
-        Pipeline& operator=(Pipeline&& other) noexcept = delete;
+        
+        Pipeline(Pipeline&& other) = delete;
+        Pipeline& operator=(Pipeline&& other) = delete;
 
     protected:
         Pipeline() = default;
