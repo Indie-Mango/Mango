@@ -2,6 +2,7 @@
 
 #include "Driver/Vulkan/Renderer/VkRenderer.hpp"
 #include "Mango/Core/Core.hpp"
+#include "Mango/Core/Logger.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -87,7 +88,7 @@ namespace Mango::Driver::Vulkan {
         shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(source, kind, shader.c_str(), "main", options);
         if (result.GetCompilationStatus() != shaderc_compilation_status_success)
         {
-            std::cout << result.GetErrorMessage() << std::endl; // TODO: Logger
+            Logger::Error("{}", result.GetErrorMessage());
             ASSERT(result.GetCompilationStatus() == shaderc_compilation_status_success, "Failed to compile shader");
         }
 

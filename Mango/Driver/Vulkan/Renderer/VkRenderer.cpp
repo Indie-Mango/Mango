@@ -3,6 +3,7 @@
 #include "Driver/Vulkan/Graphics/VkImage.hpp"
 #include "Driver/Vulkan/VkUtils.hpp"
 #include "Mango/Core/Core.hpp"
+#include "Mango/Core/Logger.hpp"
 #include "Mango/Graphics/Image.hpp"
 
 #include <GLFW/glfw3.h>
@@ -175,7 +176,7 @@ namespace Mango::Driver::Vulkan {
                             return VK_FALSE;
                         })
                         .build();
-        
+
         ASSERT(instanceRes, "Failed to create instance");
 
         vkb::Instance vkbInstance = instanceRes.value();
@@ -189,10 +190,8 @@ namespace Mango::Driver::Vulkan {
             const char* msg;
             if (int res = glfwGetError(&msg); res != 0)
             {
-                std::cout << res << " ";
                 if (msg != nullptr)
-                    std::cout << msg;
-                std::cout << "\n";
+                    Logger::Error("{}", msg);
             }
 
             ASSERT(false, "");
