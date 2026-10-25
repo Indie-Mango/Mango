@@ -26,10 +26,10 @@ namespace Mango::Driver::Vulkan {
     private:
         VkRenderer* m_Renderer = nullptr;
 
-        vk::Buffer m_Buffer;
-        vk::DeviceMemory m_Memory;
+        vk::Buffer m_Buffer{};
+        vk::DeviceMemory m_Memory{};
 
-        vk::Buffer m_StagingBuffer;
-        vk::DeviceMemory m_StagingBufferMemory;
+        vk::Buffer m_StagingBuffer{};
+        vk::DeviceMemory m_StagingBufferMemory{};
     };
 } // namespace Mango::Driver::Vulkan

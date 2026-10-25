@@ -28,6 +28,8 @@ namespace Mango {
         virtual bool BeginFrame() = 0;
         virtual void EndFrame() = 0;
 
+        virtual void WaitIdle() = 0;
+
         void OnWindowResize(const Window* window);
 
         static API GetAPI() { return m_API; }

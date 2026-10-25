@@ -162,7 +162,7 @@ namespace Mango::Driver::Vulkan {
         vk::SubmitInfo submission;
         submission.commandBufferCount = 1;
         submission.pCommandBuffers = &transferCommandBuffer;
-        m_Renderer->SubmitTransfer(submission);
+        m_Renderer->SubmitTransfer();
     }
 
     void VkImage::Allocate()

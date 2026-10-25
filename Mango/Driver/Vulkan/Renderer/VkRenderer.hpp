@@ -1,6 +1,8 @@
 ﻿#pragma once
+#include "Driver/Vulkan/Pipeline/VkShaderCompiler.hpp"
 #include "Driver/Vulkan/VkCommandBuffer.hpp"
 #include "Driver/Vulkan/VkSwapchain.hpp"
+#include "Mango/Core/Core.hpp"
 #include "Mango/Renderer/Renderer.hpp"
 
 #include <VkBootstrap.h>
@@ -22,16 +24,24 @@ namespace Mango::Driver::Vulkan {
         bool BeginFrame() override;
         void EndFrame() override;
 
+        void WaitIdle() override
+        {
+            vk::Result waitRes = m_Device.waitIdle();
+            ASSERT(waitRes == vk::Result::eSuccess, "Failed to wait for device idle");
+        }
+
         void OnWindowResize(const Window* window) const;
 
         vk::PhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
         vk::Device GetDevice() const { return m_Device; }
 
-        void SubmitTransfer(const vk::SubmitInfo& submission) const;
+        void SubmitTransfer() const;
         U32 GetTransferQueueFamilyIdx() const { return m_TransferQueueFamilyIdx; }
         vk::CommandBuffer GetTransferCommandBufferRaw() const;
 
         vk::SurfaceFormatKHR GetSurfaceFormat() const { return m_Swapchain->GetFormat(); }
+
+        VkShaderCompiler* GetShaderCompiler() const { return m_ShaderCompiler.Raw(); }
 
     private:
         void InitVulkan(GLFWwindow* window);
@@ -59,6 +69,8 @@ namespace Mango::Driver::Vulkan {
 
         Unique<VkSwapchain> m_Swapchain;
         vk::Image m_CurrentSwapchainImage;
+
+        Unique<VkShaderCompiler> m_ShaderCompiler;
 
         U32 m_GraphicsQueueFamilyIdx = ~0;
         U32 m_PresentQueueFamilyIdx = ~0;

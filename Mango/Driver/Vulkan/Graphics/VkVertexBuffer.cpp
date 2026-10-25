@@ -60,13 +60,23 @@ namespace Mango::Driver::Vulkan {
         ASSERT(mappedRes.result == vk::Result::eSuccess, "Failed to map memory to staging buffer");
         void* mapped = mappedRes.value;
         memcpy(mapped, data, m_Size);
-        d.unmapMemory(m_Memory);
+        d.unmapMemory(m_StagingBufferMemory);
+
+        vk::CommandBufferBeginInfo beginInfo;
+        vk::Result transferBeginRes = transferCommandBuffer.begin(beginInfo);
+        ASSERT(transferBeginRes == vk::Result::eSuccess, "Failed to begin recording transfer command buffer");
 
         vk::BufferCopy region;
         region.size = m_Size;
         region.srcOffset = 0;
         region.dstOffset = 0;
+
         transferCommandBuffer.copyBuffer(m_StagingBuffer, m_Buffer, region);
+
+        vk::Result transferEndRes = transferCommandBuffer.end();
+        ASSERT(transferEndRes == vk::Result::eSuccess, "Failed to end recording transfer command buffer");
+
+        m_Renderer->SubmitTransfer();
     }
 
     void VkVertexBuffer::Allocate()

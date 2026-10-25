@@ -18,7 +18,6 @@ namespace Mango {
     public:
         Engine(std::vector<std::string>&& args, Arena& arena, AppCreateFunc appCreateFn);
         ~Engine();
-
         Engine(const Engine&) = delete;
         Engine& operator=(const Engine&) = delete;
 
@@ -29,6 +28,8 @@ namespace Mango {
 
         Arena& GetArena() const { return m_Arena; }
         EventBus& GetEventBus() { return m_EventBus; }
+
+        Renderer* GetRenderer() const { return m_Renderer; }
 
     private:
         std::vector<std::string> m_Args;

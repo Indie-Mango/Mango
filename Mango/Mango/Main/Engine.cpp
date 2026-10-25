@@ -3,9 +3,17 @@
 #include "Mango/Base/TimeStep.hpp"
 #include "Mango/Renderer/Renderer.hpp"
 
+#include <filesystem>
+
 namespace Mango {
     Engine::Engine(std::vector<std::string>&& args, Arena& arena, AppCreateFunc appCreateFn) : m_Args(std::move(args)), m_Arena(arena)
     {
+        if (!std::filesystem::exists("Mango-cache")) // TODO: filesystem::createCacheDirs
+        {
+            std::filesystem::create_directory("Mango-cache");
+            std::filesystem::create_directory("Mango-cache/Shaders");
+        }
+
         WindowContext::Create();
         m_Window = m_Arena.Create<Window>(this, WindowInfo{});
 
@@ -16,6 +24,8 @@ namespace Mango {
 
     Engine::~Engine()
     {
+        m_Renderer->WaitIdle();
+        
         delete m_App;
 
         delete m_Renderer;

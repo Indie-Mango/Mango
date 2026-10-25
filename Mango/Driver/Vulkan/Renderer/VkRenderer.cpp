@@ -11,9 +11,13 @@ namespace Mango::Driver::Vulkan {
     VkRenderer::VkRenderer(const Window* window, EventBus& eventBus) : Renderer(eventBus)
     {
         InitVulkan(window->GetNativeWindow());
+
         auto available = m_PhysicalDevice.getSurfaceFormatsKHR(m_Surface).value;
         vk::SurfaceFormatKHR surfaceFormat = VkUtils::PickSurfaceFormat(available);
         m_Swapchain = Unique<VkSwapchain>::Create(m_VkbDevice, window->GetWidth(), window->GetHeight(), surfaceFormat);
+
+        m_ShaderCompiler = Unique<VkShaderCompiler>::Create(this, "Mango-Cache/Pipeline.cache", "Mango-Cache/Shaders");
+
         m_TargetImage =
                 Image::Create(this, window->GetWidth(), window->GetHeight(), ImageType::Color, ImageUsage::ColorAttachment, nullptr);
     }
@@ -107,7 +111,6 @@ namespace Mango::Driver::Vulkan {
         ASSERT(fenceRes == vk::Result::eSuccess, "Failed to reset fence");
 
         vk::Result res = m_GraphicsQueue.submit(submission, m_RenderFence);
-
         ASSERT(res == vk::Result::eSuccess, "Failed to submit graphics queue");
 
         // Present
@@ -130,10 +133,13 @@ namespace Mango::Driver::Vulkan {
         m_Swapchain->Recreate(m_VkbDevice, window->GetWidth(), window->GetHeight());
     }
 
-    void VkRenderer::SubmitTransfer(const vk::SubmitInfo& submission) const
+    void VkRenderer::SubmitTransfer() const
     {
-        vk::Result resetFenceRes = m_Device.resetFences(m_TransferFence);
-        ASSERT(resetFenceRes == vk::Result::eSuccess, "Failed to reset transfer fence");
+        vk::CommandBuffer transferCommandBuffer = m_TransferCommandBuffer.Raw();
+
+        vk::SubmitInfo submission;
+        submission.commandBufferCount = 1;
+        submission.pCommandBuffers = &transferCommandBuffer;
 
         vk::Result res = m_TransferQueue.submit(submission, m_TransferFence);
         ASSERT(res == vk::Result::eSuccess, "Failed to submit transfer command buffer to queue");
@@ -144,17 +150,32 @@ namespace Mango::Driver::Vulkan {
         vk::Result waitRes = m_Device.waitForFences(m_TransferFence, vk::True, std::numeric_limits<U64>::max());
         ASSERT(waitRes == vk::Result::eSuccess, "Failed to wait for transfer operation complete");
 
+        vk::Result resetFenceRes = m_Device.resetFences(m_TransferFence);
+        ASSERT(resetFenceRes == vk::Result::eSuccess, "Failed to reset transfer fence");
+
         return m_TransferCommandBuffer.Raw();
     }
 
     void VkRenderer::InitVulkan(GLFWwindow* window)
     {
         vkb::InstanceBuilder builder;
-        auto instanceRes = builder.set_app_name("Mango")
-                                   .require_api_version(1, 4, 0)
-                                   .request_validation_layers()
-                                   .use_default_debug_messenger()
-                                   .build();
+        auto instanceRes =
+                builder.set_app_name("Mango")
+                        .require_api_version(1, 4, 0)
+                        .request_validation_layers()
+                        .set_debug_callback([](VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT,
+                                               const VkDebugUtilsMessengerCallbackDataEXT* data, void*) -> VkBool32 {
+                            std::cerr << data->pMessage << std::endl;
+
+                            if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+                            {
+                                __debugbreak();
+                            }
+
+                            return VK_FALSE;
+                        })
+                        .build();
+        
         ASSERT(instanceRes, "Failed to create instance");
 
         vkb::Instance vkbInstance = instanceRes.value();
@@ -250,6 +271,8 @@ namespace Mango::Driver::Vulkan {
         m_GraphicsQueueFamilyIdx = ~0;
         m_PresentQueueFamilyIdx = ~0;
         m_TransferQueueFamilyIdx = ~0;
+
+        m_ShaderCompiler.Reset();
 
         m_Swapchain.Reset();
 

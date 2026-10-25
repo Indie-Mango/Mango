@@ -7,7 +7,7 @@
 namespace Mango {
     class Renderer;
 
-    enum class VertexBufferElement : U8
+    enum class ShaderDataType : U8
     {
         Float,
         Float2,
@@ -15,17 +15,17 @@ namespace Mango {
         Float4,
     };
 
-    inline USize VertexBufferElementSize(VertexBufferElement e)
+    inline USize ShaderDataTypeSize(ShaderDataType e)
     {
         switch (e)
         {
-            case VertexBufferElement::Float:
+            case ShaderDataType::Float:
                 return 1 * static_cast<USize>(4u);
-            case VertexBufferElement::Float2:
+            case ShaderDataType::Float2:
                 return 2 * static_cast<USize>(4);
-            case VertexBufferElement::Float3:
+            case ShaderDataType::Float3:
                 return 3 * static_cast<USize>(4);
-            case VertexBufferElement::Float4:
+            case ShaderDataType::Float4:
                 return 4 * static_cast<USize>(4u);
         }
 
@@ -34,16 +34,16 @@ namespace Mango {
 
     struct VertexBufferLayout
     {
-        VertexBufferLayout(const std::initializer_list<VertexBufferElement>& elements) : Elements(elements)
+        VertexBufferLayout(const std::initializer_list<ShaderDataType>& elements) : Elements(elements)
         {
             Count = Elements.size();
             for (auto element: Elements)
-                Stride += VertexBufferElementSize(element);
+                Stride += ShaderDataTypeSize(element);
         }
 
         USize Count = 0;
         USize Stride = 0;
-        std::vector<VertexBufferElement> Elements;
+        std::vector<ShaderDataType> Elements;
     };
 
     class VertexBuffer

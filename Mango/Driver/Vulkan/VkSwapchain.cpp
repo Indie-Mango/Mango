@@ -99,4 +99,4 @@ namespace Mango::Driver::Vulkan {
             m_ImageViews.push_back(view.value);
         }
     }
-}
+} // namespace Mango::Driver::Vulkan

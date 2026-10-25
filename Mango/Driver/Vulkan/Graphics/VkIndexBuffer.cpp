@@ -29,6 +29,9 @@ namespace Mango::Driver::Vulkan {
         ASSERT(memory.result == vk::Result::eSuccess, "Failed to allocate memory for index buffer");
         m_Memory = memory.value;
 
+        vk::Result bindRes = d.bindBufferMemory(m_Buffer, m_Memory, 0);
+        ASSERT(bindRes == vk::Result::eSuccess, "Failed to bind buffer memory");
+
         if (!indices.empty())
             VkIndexBuffer::SetData(indices);
     }
@@ -56,7 +59,7 @@ namespace Mango::Driver::Vulkan {
         {
             vk::BufferCreateInfo bufferInfo;
             bufferInfo.size = m_Size;
-            bufferInfo.usage = vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer;
+            bufferInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
             bufferInfo.sharingMode = vk::SharingMode::eExclusive;
 
             vk::ResultValue<vk::Buffer> buffer = d.createBuffer(bufferInfo);
@@ -66,12 +69,16 @@ namespace Mango::Driver::Vulkan {
             vk::MemoryRequirements memoryRequirements = d.getBufferMemoryRequirements(m_StagingBuffer);
             vk::MemoryAllocateInfo allocInfo;
             allocInfo.allocationSize = memoryRequirements.size;
-            allocInfo.memoryTypeIndex =
-                    VkUtils::FindMemoryTypeIdx(memoryRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal, pd);
+            allocInfo.memoryTypeIndex = VkUtils::FindMemoryTypeIdx(
+                    memoryRequirements.memoryTypeBits,
+                    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, pd);
 
             vk::ResultValue<vk::DeviceMemory> memory = d.allocateMemory(allocInfo);
             ASSERT(memory.result == vk::Result::eSuccess, "Failed to allocate memory for staging buffer");
             m_StagingBufferMemory = memory.value;
+
+            vk::Result bindRes = d.bindBufferMemory(m_StagingBuffer, m_StagingBufferMemory, 0);
+            ASSERT(bindRes == vk::Result::eSuccess, "Failed to bind staging buffer memory");
         }
 
         vk::ResultValue<void*> mappedRes = d.mapMemory(m_StagingBufferMemory, 0, m_Size);
@@ -80,10 +87,20 @@ namespace Mango::Driver::Vulkan {
         memcpy(mapped, data.data(), m_Size);
         d.unmapMemory(m_StagingBufferMemory);
 
+        vk::CommandBufferBeginInfo beginInfo;
+        vk::Result transferBeginRes = transferCommandBuffer.begin(beginInfo);
+        ASSERT(transferBeginRes == vk::Result::eSuccess, "Failed to begin recording transfer command buffer");
+
         vk::BufferCopy region;
         region.size = m_Size;
         region.srcOffset = 0;
         region.dstOffset = 0;
+
         transferCommandBuffer.copyBuffer(m_StagingBuffer, m_Buffer, region);
+
+        vk::Result transferEndRes = transferCommandBuffer.end();
+        ASSERT(transferEndRes == vk::Result::eSuccess, "Failed to end recording transfer command buffer");
+
+        m_Renderer->SubmitTransfer();
     }
 } // namespace Mango::Driver::Vulkan

@@ -29,4 +29,4 @@ namespace Mango::Driver::Vulkan {
         vk::CommandPool m_CommandPool = nullptr;
         vk::CommandBuffer m_Buffer = nullptr;
     };
-}
+} // namespace Mango::Driver::Vulkan
