@@ -20,6 +20,8 @@ namespace Mango::Driver::Vulkan {
 
         void SetData(const void* data) override;
 
+        vk::Buffer GetBuffer() const { return m_Buffer; }
+
     private:
         void Allocate();
 

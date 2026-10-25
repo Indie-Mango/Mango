@@ -10,7 +10,7 @@ namespace Mango {
         inline constexpr auto blue = "\033[34m";
         inline constexpr auto standard = "\033[31m";
     } // namespace LoggerDetail
-    
+
     class Logger
     {
     public:
@@ -27,7 +27,8 @@ namespace Mango {
         static void Error(std::format_string<Args...> fmt, Args&&... args)
         {
 #if MANGO_LOGGER_ENABLED
-            std::cout << LoggerDetail::red << std::format(fmt, std::forward<Args>(args)...) << LoggerDetail::standard;
+            std::cout << LoggerDetail::red << "[ERROR]: " << std::format(fmt, std::forward<Args>(args)...) << "\n"
+                      << LoggerDetail::standard;
             std::cout.flush();
 #endif
         }
@@ -36,7 +37,8 @@ namespace Mango {
         static void Warn(std::format_string<Args...> fmt, Args&&... args)
         {
 #if MANGO_LOGGER_ENABLED
-            std::cout << LoggerDetail::yellow << std::format(fmt, std::forward<Args>(args)...) << LoggerDetail::standard;
+            std::cout << LoggerDetail::yellow << "[WARNING]: " << std::format(fmt, std::forward<Args>(args)...) << "\n"
+                      << LoggerDetail::standard;
             std::cout.flush();
 #endif
         }
@@ -45,7 +47,8 @@ namespace Mango {
         static void Info(std::format_string<Args...> fmt, Args&&... args)
         {
 #if MANGO_LOGGER_ENABLED
-            std::cout << LoggerDetail::blue << std::format(fmt, std::forward<Args>(args)...) << LoggerDetail::standard;
+            std::cout << LoggerDetail::blue << "[INFO]: " << std::format(fmt, std::forward<Args>(args)...) << "\n"
+                      << LoggerDetail::standard;
 #endif
         }
     };

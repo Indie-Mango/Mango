@@ -5,6 +5,7 @@
 #include "Mango/Main/Main.hpp"
 
 #include "Mango/Core/Core.hpp"
+#include "Mango/Core/Logger.hpp"
 
 #include "Mango/Base/Event.hpp"
 #include "Mango/Base/Window.hpp"

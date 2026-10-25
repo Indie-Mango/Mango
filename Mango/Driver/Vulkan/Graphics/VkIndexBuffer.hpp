@@ -20,6 +20,8 @@ namespace Mango::Driver::Vulkan {
 
         void SetData(const std::vector<U32>& data) override;
 
+        vk::Buffer GetBuffer() const { return m_Buffer; }
+
     private:
         VkRenderer* m_Renderer = nullptr;
 

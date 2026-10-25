@@ -1,17 +1,18 @@
 #pragma once
-#include <iostream>
+#include "Mango/Core/Logger.hpp"
+
+#define MANGO_EXIT_PROGRAM() std::abort()
 
 #if defined(MANGO_DEBUG)
-#define ASSERT(expr, __VA_ARGS__)                                                                                                     \
+#define ASSERT(expr, ...)                                                                                                             \
     do                                                                                                                                \
     {                                                                                                                                 \
         if (!(expr))                                                                                                                  \
         {                                                                                                                             \
             Logger::Error(__VA_ARGS__);                                                                                               \
-            std::abort();                                                                                                             \
+            MANGO_EXIT_PROGRAM();                                                                                                     \
         }                                                                                                                             \
     } while (false)
-
 #else
-#define ASSERT(expr, __VA_ARGS__)
+#define ASSERT(expr, ...)
 #endif

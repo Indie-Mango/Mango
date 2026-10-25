@@ -17,6 +17,8 @@ namespace Mango::Driver::Vulkan {
         VkImage(VkImage&&) = delete;
         VkImage& operator=(VkImage&&) = delete;
 
+        void Resize(U32 width, U32 height) override;
+
         vk::Image GetImage() const { return m_Image; }
         vk::ImageView GetView() const { return m_View; }
 
@@ -28,6 +30,7 @@ namespace Mango::Driver::Vulkan {
 
     private:
         void Allocate();
+        void Free() const;
 
     private:
         VkRenderer* m_Renderer = nullptr;

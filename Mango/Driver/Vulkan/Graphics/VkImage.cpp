@@ -7,7 +7,6 @@
 namespace Mango::Driver::Vulkan {
     namespace {
         namespace Utils {
-
             vk::ImageAspectFlags MangoImageTypeToVulkanImageAspect(ImageType type)
             {
                 switch (type)
@@ -41,17 +40,21 @@ namespace Mango::Driver::Vulkan {
             SetData(data, static_cast<USize>(m_Width) * m_Height * 4);
     }
 
-    VkImage::~VkImage()
+    VkImage::~VkImage() { Free(); }
+
+    void VkImage::Resize(U32 width, U32 height)
     {
-        vk::Device d = m_Renderer->GetDevice();
+        if (width == 0 || height == 0)
+            return;
 
-        d.destroyBuffer(m_StagingBuffer);
-        d.free(m_StagingBufferMemory);
+        if (m_Width == width && m_Height == height)
+            return;
 
-        d.destroySampler(m_Sampler);
-        d.destroyImageView(m_View);
-        d.destroyImage(m_Image);
-        d.free(m_Memory);
+        m_Width = width;
+        m_Height = height;
+
+        Free();
+        Allocate();
     }
 
     void VkImage::TransitionLayout(vk::CommandBuffer commandBuffer, vk::ImageLayout from, vk::ImageLayout to,
@@ -226,5 +229,18 @@ namespace Mango::Driver::Vulkan {
         vk::ResultValue<vk::Sampler> sampler = d.createSampler(samplerInfo);
         ASSERT(sampler.result == vk::Result::eSuccess, "Failed to create sampler");
         m_Sampler = sampler.value;
+    }
+
+    void VkImage::Free() const
+    {
+        vk::Device d = m_Renderer->GetDevice();
+
+        d.destroyBuffer(m_StagingBuffer);
+        d.free(m_StagingBufferMemory);
+
+        d.destroySampler(m_Sampler);
+        d.destroyImageView(m_View);
+        d.destroyImage(m_Image);
+        d.free(m_Memory);
     }
 } // namespace Mango::Driver::Vulkan

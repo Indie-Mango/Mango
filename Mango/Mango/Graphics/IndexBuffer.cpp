@@ -13,10 +13,14 @@ namespace Mango {
                 return Shared<Driver::Vulkan::VkIndexBuffer>::Create(reinterpret_cast<Driver::Vulkan::VkRenderer*>(renderer), indices);
         }
 
-        ASSERT(false, "Renderer uses invalid or unsupported API");
+        Logger::Error("Renderer uses invalid or unsupported API");
+        MANGO_EXIT_PROGRAM();
     }
 
     void IndexBuffer::SetData(const std::vector<U32>& data) {}
 
-    IndexBuffer::IndexBuffer(const std::vector<U32>& indices) : m_IndexCount(indices.size()), m_Size(indices.size() * sizeof(U32)) {}
+    IndexBuffer::IndexBuffer(const std::vector<U32>& indices) :
+        m_Size(indices.size() * sizeof(U32)), m_IndexCount(static_cast<U32>(indices.size()))
+    {
+    }
 } // namespace Mango

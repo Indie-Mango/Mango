@@ -5,6 +5,8 @@
 #include <vulkan/vulkan.hpp>
 
 namespace Mango::Driver::Vulkan {
+    class VkRenderer;
+
     class VkSwapchain
     {
     public:

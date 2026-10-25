@@ -14,7 +14,8 @@ namespace Mango {
                                                                type, usage, data);
         }
 
-        ASSERT(false, "Renderer uses invalid or unsupported API");
+        Logger::Error("Renderer uses invalid or unsupported API");
+        MANGO_EXIT_PROGRAM();
     }
 
     Image::Image(U32 width, U32 height) : m_Width(width), m_Height(height) {}

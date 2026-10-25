@@ -12,7 +12,8 @@ namespace Mango {
                 return new Driver::Vulkan::VkRenderer(window, eventBus);
         }
 
-        ASSERT(false, "Renderer uses invalid or unsupported API");
+        Logger::Error("Renderer uses invalid or unsupported API");
+        MANGO_EXIT_PROGRAM();
     }
 
     void Renderer::OnWindowResize(const Window* window)
@@ -20,7 +21,7 @@ namespace Mango {
         switch (m_API)
         {
             case API::Vulkan:
-                return reinterpret_cast<Driver::Vulkan::VkRenderer*>(this)->OnWindowResize(window);
+                return reinterpret_cast<Driver::Vulkan::VkRenderer*>(this)->OnWindowResizeVk(window);
         }
     }
 

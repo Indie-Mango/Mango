@@ -1,5 +1,6 @@
 ﻿#include "VkSwapchain.hpp"
 
+#include "Driver/Vulkan/Renderer/VkRenderer.hpp"
 #include "Mango/Core/Core.hpp"
 
 namespace Mango::Driver::Vulkan {
@@ -10,7 +11,7 @@ namespace Mango::Driver::Vulkan {
                                                   .set_desired_format(format)
                                                   .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                                                   .build();
-        ASSERT(res.has_value(), std::string("Failed to create swapchain: " + res.error().message()));
+        ASSERT(res.has_value(), "Failed to create swapchain: {}", res.error().message());
         m_Swapchain = res.value();
 
         GetImagesAndViews();
@@ -64,7 +65,9 @@ namespace Mango::Driver::Vulkan {
                                                    .set_desired_extent(width, height)
                                                    .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
                                                    .build();
-        ASSERT(temp.vk_result() == VK_SUCCESS, "Failed to recreate swapchain");
+
+        ASSERT(temp, "Failed to recreate swap chain");
+
         std::swap(m_Swapchain, temp.value());
         vkb::destroy_swapchain(temp.value());
 

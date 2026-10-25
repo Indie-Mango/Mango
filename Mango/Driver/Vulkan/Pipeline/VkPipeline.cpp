@@ -21,7 +21,8 @@ namespace Mango::Driver::Vulkan {
                         return vk::Format::eR32G32B32A32Sfloat;
                 }
 
-                ASSERT(false, "Invalid shader data type");
+                Logger::Error("Invalid shader data type");
+                MANGO_EXIT_PROGRAM();
             }
 
             std::vector<vk::VertexInputAttributeDescription> VertexInputAttributeDesc(const std::vector<ShaderDataType>& elements)
@@ -67,7 +68,8 @@ namespace Mango::Driver::Vulkan {
                         return vk::PrimitiveTopology::eLineList;
                 }
 
-                ASSERT(false, "Invalid pipeline input type");
+                Logger::Error("Invalid pipeline input type");
+                MANGO_EXIT_PROGRAM();
             }
 
             vk::PolygonMode PipelinePolygonModeToVk(PipelinePolygonMode mode)
@@ -82,7 +84,8 @@ namespace Mango::Driver::Vulkan {
                         return vk::PolygonMode::ePoint;
                 }
 
-                ASSERT(false, "Invalid pipeline polygon mode");
+                Logger::Error("Invalid pipeline polygon mode");
+                MANGO_EXIT_PROGRAM();
             }
 
             vk::CullModeFlags PipelineCullModeToVk(PipelineCullMode mode)
@@ -97,7 +100,8 @@ namespace Mango::Driver::Vulkan {
                         return vk::CullModeFlagBits::eFront;
                 }
 
-                ASSERT(false, "Invalid pipeline cull mode");
+                Logger::Error("Invalid pipeline cull mode");
+                MANGO_EXIT_PROGRAM();
             }
 
             vk::FrontFace PipelineFaceToVk(PipelineFace face)
@@ -110,7 +114,8 @@ namespace Mango::Driver::Vulkan {
                         return vk::FrontFace::eClockwise;
                 }
 
-                ASSERT(false, "Invalid pipeline face");
+                Logger::Error("Invalid pipeline face");
+                MANGO_EXIT_PROGRAM();
             }
         } // namespace Utils
     } // namespace
@@ -204,7 +209,7 @@ namespace Mango::Driver::Vulkan {
         vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
         pipelineLayoutInfo.setLayoutCount = 0;
         pipelineLayoutInfo.pushConstantRangeCount = 0;
-        
+
         vk::ResultValue<vk::PipelineLayout> layoutRes = d.createPipelineLayout(pipelineLayoutInfo);
         ASSERT(layoutRes.result == vk::Result::eSuccess, "Failed to create pipeline layout");
         m_Layout = layoutRes.value;

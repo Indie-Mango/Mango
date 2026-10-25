@@ -43,6 +43,7 @@ namespace Mango {
         bool IsFocused() const { return m_Data.Focused; }
 
         bool IsMinimized() const { return m_Data.Minimized; }
+        bool CanRender() const { return !(m_Data.Minimized || m_Data.Width == 0 || m_Data.Height == 0); }
 
         GLFWwindow* GetNativeWindow() const;
 

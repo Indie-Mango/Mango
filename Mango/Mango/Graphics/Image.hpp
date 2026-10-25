@@ -27,6 +27,8 @@ namespace Mango {
         Image(Image&&) = delete;
         Image& operator=(Image&&) = delete;
 
+        virtual void Resize(U32 width, U32 height) = 0;
+
         U32 GetWidth() const { return m_Width; }
         U32 GetHeight() const { return m_Height; }
 

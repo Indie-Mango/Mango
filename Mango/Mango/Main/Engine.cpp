@@ -25,7 +25,7 @@ namespace Mango {
     Engine::~Engine()
     {
         m_Renderer->WaitIdle();
-        
+
         delete m_App;
 
         delete m_Renderer;
@@ -44,7 +44,7 @@ namespace Mango {
 
             m_App->Update(ts.Time);
 
-            if (!m_Window->IsMinimized() && m_Renderer->BeginFrame())
+            if (m_Window->CanRender() && m_Renderer->BeginFrame())
             {
                 m_App->Render(ts.Time, m_Renderer);
                 m_Renderer->EndFrame();

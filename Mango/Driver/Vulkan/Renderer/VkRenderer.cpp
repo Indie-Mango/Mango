@@ -1,6 +1,9 @@
 ﻿#include "VkRenderer.hpp"
 
 #include "Driver/Vulkan/Graphics/VkImage.hpp"
+#include "Driver/Vulkan/Graphics/VkIndexBuffer.hpp"
+#include "Driver/Vulkan/Graphics/VkVertexBuffer.hpp"
+#include "Driver/Vulkan/Pipeline/VkPipeline.hpp"
 #include "Driver/Vulkan/VkUtils.hpp"
 #include "Mango/Core/Core.hpp"
 #include "Mango/Core/Logger.hpp"
@@ -54,12 +57,26 @@ namespace Mango::Driver::Vulkan {
                                         vk::AccessFlagBits2::eColorAttachmentWrite);
 
         m_GraphicsCommandBuffer.BeginRendering(vkTargetImage->GetView(), {m_TargetImage->GetWidth(), m_TargetImage->GetHeight()});
+        m_Rendering = true;
+
+        vk::Viewport viewport;
+        viewport.width = static_cast<F32>(m_TargetImage->GetWidth());
+        viewport.height = static_cast<F32>(m_TargetImage->GetHeight());
+        viewport.maxDepth = 1.0f;
+        viewport.minDepth = 0.0f;
+        m_GraphicsCommandBuffer.Raw().setViewport(0, viewport);
+
+        vk::Rect2D scissor;
+        scissor.offset = vk::Offset2D{0, 0};
+        scissor.extent = vk::Extent2D{m_TargetImage->GetWidth(), m_TargetImage->GetHeight()};
+        m_GraphicsCommandBuffer.Raw().setScissor(0, scissor);
 
         return true;
     }
 
     void VkRenderer::EndFrame()
     {
+        m_Rendering = false;
         m_GraphicsCommandBuffer.EndRendering();
 
         auto* vkTargetImage = reinterpret_cast<VkImage*>(m_TargetImage.Raw());
@@ -129,9 +146,46 @@ namespace Mango::Driver::Vulkan {
                "Failed to present swapchain image");
     }
 
-    void VkRenderer::OnWindowResize(const Window* window) const
+    void VkRenderer::DrawIndexed(U32 indexCount)
     {
+        ASSERT(m_Rendering, "To draw, the renderer must be rendering");
+
+        m_GraphicsCommandBuffer.Raw().drawIndexed(indexCount, 1, 0, 0, 0);
+    }
+
+    void VkRenderer::SetVertexBuffer(const Shared<VertexBuffer>& vertexBuffer)
+    {
+        ASSERT(m_Rendering, "To set a vertex buffer, the renderer must be rendering");
+
+        vk::Buffer buffer = reinterpret_cast<VkVertexBuffer*>(vertexBuffer.Raw())->GetBuffer();
+        m_GraphicsCommandBuffer.Raw().bindVertexBuffers(0u, buffer, {0u});
+    }
+
+    void VkRenderer::SetIndexBuffer(const Shared<IndexBuffer>& indexBuffer)
+    {
+        ASSERT(m_Rendering, "To set a index buffer, the renderer must be rendering");
+
+        vk::Buffer buffer = reinterpret_cast<VkIndexBuffer*>(indexBuffer.Raw())->GetBuffer();
+        m_GraphicsCommandBuffer.Raw().bindIndexBuffer(buffer, 0, vk::IndexType::eUint32);
+    }
+
+    void VkRenderer::SetPipeline(const Shared<Pipeline>& pipeline)
+    {
+        ASSERT(m_Rendering, "To set the pipeline, the renderer must be rendering");
+
+        vk::Pipeline raw = reinterpret_cast<VkPipeline*>(pipeline.Raw())->GetPipeline();
+        m_GraphicsCommandBuffer.Raw().bindPipeline(vk::PipelineBindPoint::eGraphics, raw);
+    }
+
+    void VkRenderer::OnWindowResizeVk(const Window* window)
+    {
+        if (window->GetWidth() == 0 || window->GetHeight() == 0)
+            return;
+
+        WaitIdle();
+
         m_Swapchain->Recreate(m_VkbDevice, window->GetWidth(), window->GetHeight());
+        m_TargetImage->Resize(window->GetWidth(), window->GetHeight());
     }
 
     void VkRenderer::SubmitTransfer() const
@@ -166,11 +220,22 @@ namespace Mango::Driver::Vulkan {
                         .request_validation_layers()
                         .set_debug_callback([](VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT,
                                                const VkDebugUtilsMessengerCallbackDataEXT* data, void*) -> VkBool32 {
-                            std::cerr << data->pMessage << std::endl;
-
-                            if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+                            switch (severity)
                             {
-                                __debugbreak();
+                                case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+                                    break;
+                                case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+                                    Logger::Info("{}", data->pMessage);
+                                    break;
+                                case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+                                    Logger::Warn("{}", data->pMessage);
+                                    break;
+                                case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+                                    Logger::Error("{}", data->pMessage);
+                                    break;
+                                case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
+                                    Logger::Error("{}", data->pMessage);
+                                    MANGO_EXIT_PROGRAM();
                             }
 
                             return VK_FALSE;
@@ -194,21 +259,24 @@ namespace Mango::Driver::Vulkan {
                     Logger::Error("{}", msg);
             }
 
-            ASSERT(false, "");
+            MANGO_EXIT_PROGRAM();
         }
 
         m_Surface = rawSurface;
 
         vkb::PhysicalDeviceSelector selector{vkbInstance};
-        vk::PhysicalDeviceVulkan13Features requiredFeatures;
-        requiredFeatures.dynamicRendering = vk::True;
-        requiredFeatures.synchronization2 = vk::True;
+        vk::PhysicalDeviceFeatures requiredFeatures10;
+        requiredFeatures10.fillModeNonSolid = vk::True;
+        vk::PhysicalDeviceVulkan13Features requiredFeatures13;
+        requiredFeatures13.dynamicRendering = vk::True;
+        requiredFeatures13.synchronization2 = vk::True;
         auto physRes = selector.set_surface(rawSurface)
                                .set_minimum_version(1, 4)
-                               .set_required_features_13(requiredFeatures)
+                               .set_required_features(requiredFeatures10)
+                               .set_required_features_13(requiredFeatures13)
                                .require_dedicated_transfer_queue()
                                .select();
-        ASSERT(physRes, physRes.error().message());
+        ASSERT(physRes, "{}", physRes.error().message());
 
         const vkb::PhysicalDevice& vkbPd = physRes.value();
         m_PhysicalDevice = vkbPd.physical_device;

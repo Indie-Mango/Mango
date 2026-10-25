@@ -21,9 +21,11 @@ namespace Mango::Driver::Vulkan {
         VkPipeline(VkPipeline&&) = delete;
         VkPipeline& operator=(VkPipeline&&) = delete;
 
+        vk::Pipeline GetPipeline() const { return m_Pipeline; }
+
     private:
         VkRenderer* m_Renderer = nullptr;
-        
+
         vk::Pipeline m_Pipeline;
         vk::PipelineLayout m_Layout;
     };

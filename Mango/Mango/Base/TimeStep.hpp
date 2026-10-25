@@ -8,15 +8,15 @@ namespace Mango {
     {
         F32 Time = 0;
 
-        TimeStep() : m_LastTime(std::chrono::system_clock::now()) {}
+        TimeStep() : m_LastTime(std::chrono::steady_clock::now()) {}
         void Update()
         {
-            auto currentTime = std::chrono::system_clock::now();
-            Time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - m_LastTime).count();
+            auto currentTime = std::chrono::steady_clock::now();
+            Time = std::chrono::duration<F32>(currentTime - m_LastTime).count();
             m_LastTime = currentTime;
         }
 
     private:
-        std::chrono::system_clock::time_point m_LastTime;
+        std::chrono::steady_clock::time_point m_LastTime;
     };
 } // namespace Mango

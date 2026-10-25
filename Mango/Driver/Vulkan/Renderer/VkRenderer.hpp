@@ -24,13 +24,19 @@ namespace Mango::Driver::Vulkan {
         bool BeginFrame() override;
         void EndFrame() override;
 
+        void DrawIndexed(U32 indexCount) override;
+
+        void SetVertexBuffer(const Shared<VertexBuffer>& vertexBuffer) override;
+        void SetIndexBuffer(const Shared<IndexBuffer>& indexBuffer) override;
+        void SetPipeline(const Shared<Pipeline>& pipeline) override;
+
         void WaitIdle() override
         {
             vk::Result waitRes = m_Device.waitIdle();
             ASSERT(waitRes == vk::Result::eSuccess, "Failed to wait for device idle");
         }
 
-        void OnWindowResize(const Window* window) const;
+        void OnWindowResizeVk(const Window* window);
 
         vk::PhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
         vk::Device GetDevice() const { return m_Device; }
@@ -77,5 +83,7 @@ namespace Mango::Driver::Vulkan {
         U32 m_TransferQueueFamilyIdx = ~0;
 
         U32 m_CurrenSwapchainImageIdx = ~0;
+
+        bool m_Rendering = false;
     };
 } // namespace Mango::Driver::Vulkan

@@ -7,13 +7,14 @@ namespace Mango {
 
         for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++)
         {
-            if ((filter & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+            if (filter & (1 << i) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
             {
                 return i;
             }
         }
 
-        ASSERT(false, "Failed to find suitable memory type index");
+        Logger::Error("Failed to find suitable memory type index");
+        MANGO_EXIT_PROGRAM();
     }
 
     vk::SurfaceFormatKHR VkUtils::PickSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats)

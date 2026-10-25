@@ -1,7 +1,5 @@
 #include "Mango/Mango.hpp"
 
-#include <iostream>
-
 namespace {
     class Sandbox : public Mango::Application
     {
@@ -15,13 +13,14 @@ namespace {
                     });
 
             Mango::VertexBufferLayout vertexBufferLayout = {
-                    Mango::ShaderDataType::Float3 // position
+                    Mango::ShaderDataType::Float2, // position
+                    Mango::ShaderDataType::Float3 // color
             };
 
             float vertices[]{
-                    0.0f,  0.5f,  1.0f, // TOP
-                    -0.5f, -0.5f, 1.0f, // BOTTOM - LEFT
-                    0.5f,  -0.5f, 1.0f, // BOTTOM - RIGHT
+                    0.0f,  0.5f,  1.0f, 0.0f, 0.0f, // TOP
+                    -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, // BOTTOM - LEFT
+                    0.5f,  -0.5f, 0.0f, 0.0f, 1.0f // BOTTOM - RIGHT
             };
 
             std::vector<Mango::U32> indices = {0, 1, 2};
@@ -38,7 +37,13 @@ namespace {
 
         void Update(Mango::F32 ts) override {}
 
-        void Render(Mango::F32 ts, Mango::Renderer* renderer) const override {}
+        void Render(Mango::F32 ts, Mango::Renderer* renderer) const override
+        {
+            renderer->SetVertexBuffer(m_VertexBuffer);
+            renderer->SetIndexBuffer(m_IndexBuffer);
+            renderer->SetPipeline(m_pipeline);
+            renderer->DrawIndexed(m_IndexBuffer->GetIndexCount());
+        }
 
     private:
         Mango::EventConnection<Mango::WindowClosedEvent> m_WindowClosedConnection;

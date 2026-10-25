@@ -21,11 +21,13 @@ namespace Mango {
 
         virtual void SetData(const std::vector<U32>& data) = 0;
 
+        U32 GetIndexCount() const { return m_IndexCount; }
+
     protected:
         IndexBuffer(const std::vector<U32>& indices);
 
     protected:
-        USize m_IndexCount = 0;
         USize m_Size = 0;
+        U32 m_IndexCount = 0;
     };
 } // namespace Mango

@@ -5,6 +5,9 @@
 #include "Mango/Memory/Smart.hpp"
 
 namespace Mango {
+    class Pipeline;
+    class IndexBuffer;
+    class VertexBuffer;
     class Image;
 
     class Renderer
@@ -27,6 +30,12 @@ namespace Mango {
 
         virtual bool BeginFrame() = 0;
         virtual void EndFrame() = 0;
+
+        virtual void DrawIndexed(U32 indexCount) = 0;
+
+        virtual void SetVertexBuffer(const Shared<VertexBuffer>& vertexBuffer) = 0;
+        virtual void SetIndexBuffer(const Shared<IndexBuffer>& indexBuffer) = 0;
+        virtual void SetPipeline(const Shared<Pipeline>& pipeline) = 0;
 
         virtual void WaitIdle() = 0;
 

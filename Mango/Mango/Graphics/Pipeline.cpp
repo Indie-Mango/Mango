@@ -15,6 +15,7 @@ namespace Mango {
                                                                   pipelineInfo, vertShader, fragShader);
         }
 
-        ASSERT(false, "Renderer uses invalid or unsupported API");
+        Logger::Error("Renderer uses invalid or unsupported API");
+        MANGO_EXIT_PROGRAM();
     }
 } // namespace Mango
