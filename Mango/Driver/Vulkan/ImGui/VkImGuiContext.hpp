@@ -20,7 +20,7 @@ namespace Mango::Driver::Vulkan {
 
     private:
         VkRenderer* m_Renderer = nullptr;
-        
-        VkDescriptorPool m_DescriptorPool=VK_NULL_HANDLE;
+
+        VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
     };
 } // namespace Mango::Driver::Vulkan

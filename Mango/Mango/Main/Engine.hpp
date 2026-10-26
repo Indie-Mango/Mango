@@ -41,6 +41,6 @@ namespace Mango {
         Application* m_App = nullptr;
         Window* m_Window = nullptr;
         Renderer* m_Renderer = nullptr;
-        ImGuiContext* m_ImGuiContext =nullptr;
+        ImGuiContext* m_ImGuiContext = nullptr;
     };
 } // namespace Mango

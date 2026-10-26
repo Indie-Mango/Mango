@@ -31,9 +31,9 @@ namespace Mango::Driver::Vulkan {
         vkInitInfo.Queue = renderer->GetGraphicsQueue();
         vkInitInfo.PipelineCache = renderer->GetShaderCompiler()->GetPipelineCache();
 
-        VkDescriptorPoolSize pool_sizes[] = {{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
-                                             {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
-                                             {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000}};
+        VkDescriptorPoolSize pool_sizes[] = {{.type = VK_DESCRIPTOR_TYPE_SAMPLER, .descriptorCount = 1000},
+                                             {.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, .descriptorCount = 1000},
+                                             {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1000}};
 
         VkDescriptorPoolCreateInfo pool_info{};
         pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

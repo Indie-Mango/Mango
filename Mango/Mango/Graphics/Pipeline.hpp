@@ -52,7 +52,7 @@ namespace Mango {
 
         Pipeline(const Pipeline& other) = delete;
         Pipeline& operator=(const Pipeline& other) = delete;
-        
+
         Pipeline(Pipeline&& other) = delete;
         Pipeline& operator=(Pipeline&& other) = delete;
 
