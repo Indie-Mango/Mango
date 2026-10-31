@@ -9,11 +9,11 @@ namespace Mango::Driver::Vulkan {
         VkImGuiContext(Window* window, VkRenderer* renderer);
         ~VkImGuiContext() override;
 
-        VkImGuiContext(const VkImGuiContext& other) = delete;
-        VkImGuiContext& operator=(const VkImGuiContext& other) = delete;
+        VkImGuiContext(const VkImGuiContext&) = delete;
+        VkImGuiContext& operator=(const VkImGuiContext&) = delete;
 
-        VkImGuiContext(VkImGuiContext&& other) = delete;
-        VkImGuiContext& operator=(VkImGuiContext&& other) = delete;
+        VkImGuiContext(VkImGuiContext&&) = delete;
+        VkImGuiContext& operator=(VkImGuiContext&&) = delete;
 
         void BeginFrame() override;
         void EndFrame() override;

@@ -177,6 +177,24 @@ namespace Mango::Driver::Vulkan {
         m_GraphicsCommandBuffer.Raw().bindPipeline(vk::PipelineBindPoint::eGraphics, raw);
     }
 
+    void VkRenderer::WaitIdle()
+    {
+        vk::Result waitRes = m_Device.waitIdle();
+        ASSERT(waitRes == vk::Result::eSuccess, "Failed to wait for device idle");
+    }
+
+    std::vector<vk::DescriptorSet> VkRenderer::AllocateDescriptorSet(const std::vector<vk::DescriptorSetLayout>& layouts) const
+    {
+        vk::DescriptorSetAllocateInfo info{};
+        info.descriptorPool = m_DescriptorPool;
+        info.descriptorSetCount = static_cast<U32>(layouts.size());
+        info.pSetLayouts = layouts.data();
+
+        vk::ResultValue<std::vector<vk::DescriptorSet>> res = m_Device.allocateDescriptorSets(info);
+        ASSERT(res.result == vk::Result::eSuccess, "Failed to allocate descriptor sets");
+        return res.value;
+    }
+
     void VkRenderer::OnWindowResizeVk(const Window* window)
     {
         if (window->GetWidth() == 0 || window->GetHeight() == 0)
@@ -331,6 +349,22 @@ namespace Mango::Driver::Vulkan {
         fence = m_Device.createFence(fenceInfo);
         ASSERT(fence.result == vk::Result::eSuccess, "Failed to create fence");
         m_RenderFence = fence.value;
+
+        std::array<vk::DescriptorPoolSize, 2> poolSizes;
+
+        poolSizes[0].descriptorCount = 1000;
+        poolSizes[0].type = vk::DescriptorType::eUniformBuffer;
+        poolSizes[1].descriptorCount = 1000;
+        poolSizes[1].type = vk::DescriptorType::eCombinedImageSampler;
+
+        vk::DescriptorPoolCreateInfo poolInfo;
+        poolInfo.maxSets = 500;
+        poolInfo.poolSizeCount = poolSizes.size();
+        poolInfo.pPoolSizes = poolSizes.data();
+
+        vk::ResultValue<vk::DescriptorPool> poolRes = m_Device.createDescriptorPool(poolInfo);
+        ASSERT(poolRes.result == vk::Result::eSuccess, "Failed to create descriptor pool");
+        m_DescriptorPool = poolRes.value;
     }
 
     void VkRenderer::ShutdownVulkan()
@@ -338,6 +372,8 @@ namespace Mango::Driver::Vulkan {
         m_GraphicsQueueFamilyIdx = ~0;
         m_PresentQueueFamilyIdx = ~0;
         m_TransferQueueFamilyIdx = ~0;
+
+        m_Device.destroyDescriptorPool(m_DescriptorPool);
 
         m_ShaderCompiler.Reset();
 

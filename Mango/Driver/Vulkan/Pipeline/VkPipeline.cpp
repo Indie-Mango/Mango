@@ -3,6 +3,7 @@
 #include "Driver/Vulkan/Pipeline/VkShaderCompiler.hpp"
 #include "Driver/Vulkan/Renderer/VkRenderer.hpp"
 #include "Mango/Core/Core.hpp"
+#include "Mango/Core/Filesystem.hpp"
 
 namespace Mango::Driver::Vulkan {
     namespace {
@@ -117,11 +118,107 @@ namespace Mango::Driver::Vulkan {
                 Logger::Error("Invalid pipeline face");
                 MANGO_EXIT_PROGRAM();
             }
+
+            vk::DescriptorType PipelineDescTypeToVk(PipelineDescriptorType type)
+            {
+                switch (type)
+                {
+                    case PipelineDescriptorType::UniformBuffer:
+                        return vk::DescriptorType::eUniformBuffer;
+                    case PipelineDescriptorType::SampledImage:
+                        return vk::DescriptorType::eCombinedImageSampler;
+                }
+
+                Logger::Error("Invalid pipeline descriptor");
+                MANGO_EXIT_PROGRAM();
+            }
+
+            vk::ShaderStageFlags PipelineStageToVk(PipelineStage stage)
+            {
+                switch (stage)
+                {
+                    case PipelineStage::None:
+                        Logger::Error("Invalid pipeline stage");
+                        MANGO_EXIT_PROGRAM();
+                    case PipelineStage::Vertex:
+                        return vk::ShaderStageFlagBits::eVertex;
+                    case PipelineStage::Fragment:
+                        return vk::ShaderStageFlagBits::eFragment;
+                    case PipelineStage::All:
+                        return vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
+                }
+
+                Logger::Error("Invalid pipeline stage");
+                MANGO_EXIT_PROGRAM();
+            }
         } // namespace Utils
     } // namespace
 
-    VkPipeline::VkPipeline(VkRenderer* renderer, const PipelineInfo& info, const std::string& vertShader,
-                           const std::string& fragShader) : m_Renderer(renderer)
+    VkPipeline::VkPipeline(VkRenderer* renderer, const PipelineInfo& info, const File& vertShader, const File& fragShader) :
+        m_Renderer(renderer)
+    {
+        CreateDescriptorSets(info.PipelineLayout);
+        CreatePipelineLayout();
+        CreatePipeline(info, vertShader, fragShader);
+    }
+
+    VkPipeline::~VkPipeline()
+    {
+        vk::Device d = m_Renderer->GetDevice();
+
+        d.destroyPipeline(m_Pipeline);
+        d.destroyPipelineLayout(m_Layout);
+
+        for (auto layout: m_DescriptorSetLayouts)
+            d.destroyDescriptorSetLayout(layout);
+    }
+
+    void VkPipeline::CreateDescriptorSets(const PipelineLayout& layout)
+    {
+        vk::Device d = m_Renderer->GetDevice();
+
+        m_DescriptorSetLayouts.reserve(layout.DescriptorSets.size());
+
+        for (const auto& [descriptors, stage]: layout.DescriptorSets)
+        {
+            std::vector<vk::DescriptorSetLayoutBinding> bindings;
+            bindings.reserve(descriptors.size());
+
+            for (U32 i = 0; i < static_cast<U32>(descriptors.size()); i++)
+            {
+                vk::DescriptorSetLayoutBinding binding;
+                binding.binding = i;
+                binding.descriptorType = Utils::PipelineDescTypeToVk(descriptors[i]);
+                binding.descriptorCount = 1;
+                binding.stageFlags = Utils::PipelineStageToVk(stage);
+
+                bindings.emplace_back(binding);
+            }
+
+            vk::DescriptorSetLayoutCreateInfo setInfo;
+            setInfo.bindingCount = static_cast<U32>(bindings.size());
+            setInfo.pBindings = bindings.data();
+            vk::ResultValue<vk::DescriptorSetLayout> setRes = d.createDescriptorSetLayout(setInfo);
+            ASSERT(setRes.result == vk::Result::eSuccess, "Failed to create descriptor set layout");
+            m_DescriptorSetLayouts.push_back(setRes.value);
+        }
+    }
+
+    void VkPipeline::CreatePipelineLayout()
+    {
+        vk::Device d = m_Renderer->GetDevice();
+
+        vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
+        pipelineLayoutInfo.setLayoutCount = static_cast<U32>(m_DescriptorSetLayouts.size());
+        pipelineLayoutInfo.pSetLayouts = m_DescriptorSetLayouts.data();
+        pipelineLayoutInfo.pushConstantRangeCount = 0;
+
+        vk::ResultValue<vk::PipelineLayout> layoutRes = d.createPipelineLayout(pipelineLayoutInfo);
+        ASSERT(layoutRes.result == vk::Result::eSuccess, "Failed to create pipeline layout");
+        m_Layout = layoutRes.value;
+    }
+
+    void VkPipeline::CreatePipeline(const PipelineInfo& info, const File& vertShader, const File& fragShader)
     {
         vk::SurfaceFormatKHR surfaceFormat = m_Renderer->GetSurfaceFormat();
 
@@ -132,17 +229,17 @@ namespace Mango::Driver::Vulkan {
         vk::GraphicsPipelineCreateInfo pipelineInfo;
         pipelineInfo.pNext = &renderingInfo;
 
-        VkShaderCompiler* shaderCompiler = renderer->GetShaderCompiler();
-        VkShaderModulePair modulePair = shaderCompiler->CreateShaderModules(vertShader, fragShader);
+        VkShaderCompiler* shaderCompiler = m_Renderer->GetShaderCompiler();
+        auto [vertShaderModule, fragShaderModule] = shaderCompiler->CreateShaderModules(vertShader, fragShader);
 
         vk::PipelineShaderStageCreateInfo vertShaderStageInfo;
         vertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-        vertShaderStageInfo.module = modulePair.vertShaderModule;
+        vertShaderStageInfo.module = vertShaderModule;
         vertShaderStageInfo.pName = "main";
 
         vk::PipelineShaderStageCreateInfo fragShaderStageInfo;
         fragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-        fragShaderStageInfo.module = modulePair.fragShaderModule;
+        fragShaderStageInfo.module = fragShaderModule;
         fragShaderStageInfo.pName = "main";
 
         std::array shaderStages = {vertShaderStageInfo, fragShaderStageInfo};
@@ -204,31 +301,15 @@ namespace Mango::Driver::Vulkan {
         pipelineInfo.pColorBlendState = &colorBlendState;
         pipelineInfo.pDynamicState = &dynamicState;
 
-        vk::Device d = m_Renderer->GetDevice();
-
-        vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
-        pipelineLayoutInfo.setLayoutCount = 0;
-        pipelineLayoutInfo.pushConstantRangeCount = 0;
-
-        vk::ResultValue<vk::PipelineLayout> layoutRes = d.createPipelineLayout(pipelineLayoutInfo);
-        ASSERT(layoutRes.result == vk::Result::eSuccess, "Failed to create pipeline layout");
-        m_Layout = layoutRes.value;
-
         pipelineInfo.layout = m_Layout;
+
+        vk::Device d = m_Renderer->GetDevice();
 
         vk::ResultValue<vk::Pipeline> pipelineRes = d.createGraphicsPipeline(shaderCompiler->GetPipelineCache(), pipelineInfo);
         ASSERT(pipelineRes.result == vk::Result::eSuccess, "Failed to create graphics pipeline");
         m_Pipeline = pipelineRes.value;
 
-        d.destroyShaderModule(modulePair.vertShaderModule);
-        d.destroyShaderModule(modulePair.fragShaderModule);
-    }
-
-    VkPipeline::~VkPipeline()
-    {
-        vk::Device d = m_Renderer->GetDevice();
-
-        d.destroyPipeline(m_Pipeline);
-        d.destroyPipelineLayout(m_Layout);
+        d.destroyShaderModule(vertShaderModule);
+        d.destroyShaderModule(fragShaderModule);
     }
 } // namespace Mango::Driver::Vulkan

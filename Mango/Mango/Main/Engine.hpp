@@ -30,6 +30,7 @@ namespace Mango {
         Arena& GetArena() const { return m_Arena; }
         EventBus& GetEventBus() { return m_EventBus; }
 
+        Window* GetWindow() const { return m_Window; }
         Renderer* GetRenderer() const { return m_Renderer; }
 
     private:

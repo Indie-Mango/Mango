@@ -5,6 +5,7 @@
 #include "Mango/Main/Main.hpp"
 
 #include "Mango/Core/Core.hpp"
+#include "Mango/Core/Filesystem.hpp"
 #include "Mango/Core/Logger.hpp"
 
 #include "Mango/Base/Event.hpp"
@@ -14,7 +15,9 @@
 
 #include "Mango/Graphics/Image.hpp"
 #include "Mango/Graphics/IndexBuffer.hpp"
+#include "Mango/Graphics/Material.hpp"
 #include "Mango/Graphics/Pipeline.hpp"
+#include "Mango/Graphics/UniformBuffer.hpp"
 #include "Mango/Graphics/VertexBuffer.hpp"
 
 #include "Mango/Math/Math.hpp"

@@ -68,7 +68,7 @@ namespace Mango {
 
     protected:
         VertexBuffer(const VertexBufferLayout& layout, U32 vertexCount) :
-            m_Layout(layout), m_VertexCount(vertexCount), m_Size(layout.Stride * vertexCount)
+            m_Layout(layout), m_Size(layout.Stride * vertexCount), m_VertexCount(vertexCount)
         {
         }
 

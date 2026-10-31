@@ -1,8 +1,8 @@
 ﻿#pragma once
 
+#include "Mango/Core/Filesystem.hpp"
 #include "Mango/Graphics/Pipeline.hpp"
 
-#include <string>
 #include <vulkan/vulkan.hpp>
 
 namespace Mango::Driver::Vulkan {
@@ -12,7 +12,7 @@ namespace Mango::Driver::Vulkan {
     {
     public:
         // TODO: Filesystem handle
-        VkPipeline(VkRenderer* renderer, const PipelineInfo& info, const std::string& vertShader, const std::string& fragShader);
+        VkPipeline(VkRenderer* renderer, const PipelineInfo& info, const File& vertShader, const File& fragShader);
         ~VkPipeline() override;
 
         VkPipeline(const VkPipeline&) = delete;
@@ -22,11 +22,21 @@ namespace Mango::Driver::Vulkan {
         VkPipeline& operator=(VkPipeline&&) = delete;
 
         vk::Pipeline GetPipeline() const { return m_Pipeline; }
+        vk::PipelineLayout GetLayout() const { return m_Layout; }
+
+        const std::vector<vk::DescriptorSetLayout>& GetDescriptorSetLayouts() { return m_DescriptorSetLayouts; }
+
+    private:
+        void CreateDescriptorSets(const PipelineLayout& layout);
+        void CreatePipelineLayout();
+        void CreatePipeline(const PipelineInfo& info, const File& vertShader, const File& fragShader);
 
     private:
         VkRenderer* m_Renderer = nullptr;
 
         vk::Pipeline m_Pipeline;
         vk::PipelineLayout m_Layout;
+
+        std::vector<vk::DescriptorSetLayout> m_DescriptorSetLayouts;
     };
 } // namespace Mango::Driver::Vulkan

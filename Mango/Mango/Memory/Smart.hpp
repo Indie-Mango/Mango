@@ -88,8 +88,8 @@ namespace Mango {
         Unique() = default;
         ~Unique() = default;
 
-        Unique(const Unique& other) = delete;
-        Unique& operator=(const Unique& other) = delete;
+        Unique(const Unique&) = delete;
+        Unique& operator=(const Unique&) = delete;
         Unique(Unique&& other) noexcept { m_Data = std::move(other.m_Data); }
         Unique& operator=(Unique&& other) noexcept
         {
@@ -98,9 +98,9 @@ namespace Mango {
         }
 
         template<typename U>
-        Unique(const Unique& other) = delete;
+        Unique(const Unique&) = delete;
         template<typename U>
-        Unique& operator=(const Unique& other) = delete;
+        Unique& operator=(const Unique&) = delete;
         template<typename U>
         Unique(Unique<U>&& other) noexcept
         {

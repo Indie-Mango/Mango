@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Mango/Common/CommonTypes.hpp"
+#include "Mango/Core/Filesystem.hpp"
 
 #include <shaderc/shaderc.h>
 #include <vulkan/vulkan.hpp>
@@ -9,8 +10,8 @@ namespace Mango::Driver::Vulkan {
 
     struct VkShaderModulePair
     {
-        vk::ShaderModule vertShaderModule;
-        vk::ShaderModule fragShaderModule;
+        vk::ShaderModule VertShaderModule;
+        vk::ShaderModule FragShaderModule;
     };
 
     class VkShaderCompiler
@@ -20,19 +21,19 @@ namespace Mango::Driver::Vulkan {
         VkShaderCompiler(VkRenderer* renderer, std::string pipelineCache, std::string outputDir);
         ~VkShaderCompiler();
 
-        VkShaderCompiler(const VkShaderCompiler& other) = delete;
-        VkShaderCompiler& operator=(const VkShaderCompiler& other) = delete;
+        VkShaderCompiler(const VkShaderCompiler&) = delete;
+        VkShaderCompiler& operator=(const VkShaderCompiler&) = delete;
 
-        VkShaderCompiler(VkShaderCompiler&& other) = delete;
-        VkShaderCompiler& operator=(VkShaderCompiler&& other) = delete;
+        VkShaderCompiler(VkShaderCompiler&&) = delete;
+        VkShaderCompiler& operator=(VkShaderCompiler&&) = delete;
 
-        VkShaderModulePair CreateShaderModules(const std::string& vertShader, const std::string& fragShader) const;
+        VkShaderModulePair CreateShaderModules(const File& vertShader, const File& fragShader) const;
 
         vk::PipelineCache GetPipelineCache() const { return m_PipelineCache; }
 
     private:
         // TODO: Filesystem
-        static std::vector<U32> Compile(const std::string& shader, shaderc_shader_kind kind);
+        static std::vector<U32> Compile(const File& shader, shaderc_shader_kind kind);
         vk::ShaderModule CreateModule(const std::vector<U32>& spv) const;
 
     private:

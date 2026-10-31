@@ -2,6 +2,7 @@
 
 #include "Driver/Vulkan/Renderer/VkRenderer.hpp"
 #include "Mango/Core/Core.hpp"
+#include "Mango/Core/Filesystem.hpp"
 #include "Mango/Core/Logger.hpp"
 
 #include <filesystem>
@@ -54,7 +55,7 @@ namespace Mango::Driver::Vulkan {
         d.destroyPipelineCache(m_PipelineCache);
     }
 
-    VkShaderModulePair VkShaderCompiler::CreateShaderModules(const std::string& vertShader, const std::string& fragShader) const
+    VkShaderModulePair VkShaderCompiler::CreateShaderModules(const File& vertShader, const File& fragShader) const
     {
         std::vector<U32> vertSpv = Compile(vertShader, shaderc_vertex_shader);
         ASSERT(!vertSpv.empty(), "Shader SPIR-V is empty");
@@ -64,14 +65,14 @@ namespace Mango::Driver::Vulkan {
         ASSERT(!fragSpv.empty(), "Shader SPIR-V is empty");
         ASSERT(fragSpv[0] == 0x07230203, "Invalid SPIR-V");
 
-        return {.vertShaderModule = CreateModule(vertSpv), .fragShaderModule = CreateModule(fragSpv)};
+        return {.VertShaderModule = CreateModule(vertSpv), .FragShaderModule = CreateModule(fragSpv)};
     }
 
-    std::vector<U32> VkShaderCompiler::Compile(const std::string& shader, shaderc_shader_kind kind)
+    std::vector<U32> VkShaderCompiler::Compile(const File& shader, shaderc_shader_kind kind)
     {
-        std::ifstream file(shader, std::ios::binary);
-        ASSERT(file.is_open(), "Failed to open file");
-        std::string source = {std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+        std::string source;
+        source.resize(shader.GetSize());
+        shader.Read(source.data(), shader.GetSize());
 
         if (source.size() >= 3 && static_cast<uint8_t>(source[0]) == 0xEF && static_cast<uint8_t>(source[1]) == 0xBB &&
             static_cast<uint8_t>(source[2]) == 0xBF) // UTF-8 bomb
@@ -85,7 +86,8 @@ namespace Mango::Driver::Vulkan {
         options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
         options.SetOptimizationLevel(shaderc_optimization_level_performance);
 
-        shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(source, kind, shader.c_str(), "main", options);
+        shaderc::SpvCompilationResult result =
+                compiler.CompileGlslToSpv(source, kind, shader.GetPath().filename().string().c_str(), "main", options);
         if (result.GetCompilationStatus() != shaderc_compilation_status_success)
         {
             Logger::Error("{}", result.GetErrorMessage());

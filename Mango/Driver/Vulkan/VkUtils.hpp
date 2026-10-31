@@ -1,10 +1,10 @@
 ﻿#pragma once
 #include "Mango/Common/CommonTypes.hpp"
-#include "Mango/Core/Core.hpp"
 
 #include <vulkan/vulkan.hpp>
 
 namespace Mango {
+    // TODO: Create buffer, Create image, ...
     struct VkUtils
     {
         static U32 FindMemoryTypeIdx(U32 filter, vk::MemoryPropertyFlags properties, vk::PhysicalDevice pd);

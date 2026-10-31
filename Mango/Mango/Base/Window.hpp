@@ -1,5 +1,7 @@
 ﻿#pragma once
+#include "Mango/Base/Codes.hpp"
 #include "Mango/Common/CommonTypes.hpp"
+#include "Mango/Math/Math.hpp"
 
 #include <string>
 
@@ -25,6 +27,10 @@ namespace Mango {
 
         Window(Window&&) = delete;
         Window& operator=(Window&&) = delete;
+
+        bool IsKeyPressed(Key::Code key) const;
+        bool IsMouseButtonPressed(Mouse::Button button) const;
+        glm::vec2 GetMousePos() const;
 
         const std::string& GetTitle() { return m_Data.Title; }
         void SetTitle(const std::string& title);

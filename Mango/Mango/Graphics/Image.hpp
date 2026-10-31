@@ -15,6 +15,7 @@ namespace Mango {
         ColorAttachment
     };
 
+    // TODO: Rework
     class Image
     {
     public:

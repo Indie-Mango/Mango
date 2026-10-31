@@ -31,6 +31,17 @@ namespace Mango {
         }
     }
 
+    bool Window::IsKeyPressed(Key::Code key) const { return glfwGetKey(m_Window, key); }
+
+    bool Window::IsMouseButtonPressed(Mouse::Button button) const { return glfwGetMouseButton(m_Window, button); }
+
+    glm::vec2 Window::GetMousePos() const
+    {
+        glm::dvec2 pos;
+        glfwGetCursorPos(m_Window, &pos.x, &pos.y);
+        return pos;
+    }
+
     void Window::SetTitle(const std::string& title)
     {
         m_Data.Title = title;
@@ -70,33 +81,33 @@ namespace Mango {
     void Window::SetEventCallbackFunctions() const
     {
         glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window) {
-            Data* data = static_cast<Data*>(glfwGetWindowUserPointer(window));
+            auto* data = static_cast<Data*>(glfwGetWindowUserPointer(window));
             data->Open = false;
             data->EventBus->Emit(WindowClosedEvent{});
         });
 
         glfwSetWindowPosCallback(m_Window, [](GLFWwindow* window, int xPos, int yPos) {
-            Data* data = static_cast<Data*>(glfwGetWindowUserPointer(window));
+            auto* data = static_cast<Data*>(glfwGetWindowUserPointer(window));
             data->XPos = xPos;
             data->YPos = yPos;
             data->EventBus->Emit(WindowMovedEvent{data->Self});
         });
 
         glfwSetFramebufferSizeCallback(m_Window, [](GLFWwindow* window, int width, int height) {
-            Data* data = static_cast<Data*>(glfwGetWindowUserPointer(window));
+            auto* data = static_cast<Data*>(glfwGetWindowUserPointer(window));
             data->Width = width;
             data->Height = height;
             data->EventBus->Emit(WindowResizedEvent{data->Self});
         });
 
         glfwSetWindowFocusCallback(m_Window, [](GLFWwindow* window, int focused) {
-            Data* data = static_cast<Data*>(glfwGetWindowUserPointer(window));
+            auto* data = static_cast<Data*>(glfwGetWindowUserPointer(window));
             data->Focused = focused;
             data->EventBus->Emit(WindowFocusedEvent{data->Self});
         });
 
         glfwSetWindowIconifyCallback(m_Window, [](GLFWwindow* window, int iconified) {
-            Data* data = static_cast<Data*>(glfwGetWindowUserPointer(window));
+            auto* data = static_cast<Data*>(glfwGetWindowUserPointer(window));
             data->Minimized = iconified;
             data->EventBus->Emit(WindowMinimizedEvent{data->Self});
         });

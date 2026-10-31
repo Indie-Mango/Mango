@@ -5,8 +5,8 @@
 #include "Mango/Renderer/Renderer.hpp"
 
 namespace Mango {
-    Shared<Pipeline> Pipeline::Create(Renderer* renderer, const PipelineInfo& pipelineInfo, const std::string& vertShader,
-                                      const std::string& fragShader)
+    Shared<Pipeline> Pipeline::Create(Renderer* renderer, const PipelineInfo& pipelineInfo, const File& vertShader,
+                                      const File& fragShader)
     {
         switch (Renderer::GetAPI())
         {

@@ -5,6 +5,10 @@
 #include <fstream>
 
 namespace Mango {
+    namespace {
+        inline Path s_CacheDir;
+    }
+
     std::vector<Path> FileSystem::ListDirectory(const Path& path)
     {
         std::vector<Path> entries;
@@ -83,6 +87,23 @@ namespace Mango {
             return {};
         }
     } // namespace
+
+    void FileSystem::CreateCacheDirectories(Path cacheDir)
+    {
+        s_CacheDir = std::move(cacheDir);
+
+        if (!std::filesystem::exists(s_CacheDir))
+        {
+            std::filesystem::create_directory(s_CacheDir);
+        }
+
+        if (!std::filesystem::exists(s_CacheDir / "Shaders"))
+        {
+            std::filesystem::create_directory(s_CacheDir / "Shaders");
+        }
+    }
+
+    const Path& FileSystem::GetCacheDirectory() { return s_CacheDir; }
 
     File::File(const std::filesystem::path& path, FileMode mode) { Open(path, mode); }
 
@@ -169,7 +190,7 @@ namespace Mango {
         return success;
     }
 
-    bool File::Read(void* buffer, U64 size)
+    bool File::Read(void* buffer, U64 size) const
     {
         if (!IsOpen() || (m_Mode != FileMode::Read && m_Mode != FileMode::ReadWrite) || (!buffer && size != 0) ||
             size > static_cast<U64>(std::numeric_limits<std::streamsize>::max()))
@@ -180,7 +201,7 @@ namespace Mango {
         if (size == 0)
             return true;
 
-        m_Stream.read(static_cast<char*>(buffer), static_cast<std::streamsize>(size));
+        const_cast<std::fstream&>(m_Stream).read(static_cast<char*>(buffer), static_cast<std::streamsize>(size));
 
         return m_Stream.gcount() == static_cast<std::streamsize>(size);
     }

@@ -2,6 +2,7 @@
 
 #include "Driver/Vulkan/Graphics/VkIndexBuffer.hpp"
 #include "Driver/Vulkan/VkUtils.hpp"
+#include "Mango/Core/Core.hpp"
 #include "Mango/Renderer/Renderer.hpp"
 
 namespace Mango {
@@ -16,8 +17,6 @@ namespace Mango {
         Logger::Error("Renderer uses invalid or unsupported API");
         MANGO_EXIT_PROGRAM();
     }
-
-    void IndexBuffer::SetData(const std::vector<U32>& data) {}
 
     IndexBuffer::IndexBuffer(const std::vector<U32>& indices) :
         m_Size(indices.size() * sizeof(U32)), m_IndexCount(static_cast<U32>(indices.size()))

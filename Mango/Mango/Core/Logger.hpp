@@ -17,11 +17,11 @@ namespace Mango {
         Logger() = delete;
         ~Logger() = delete;
 
-        Logger(const Logger& other) = delete;
-        Logger& operator=(const Logger& other) = delete;
+        Logger(const Logger&) = delete;
+        Logger& operator=(const Logger&) = delete;
 
-        Logger& operator=(Logger&& other) = delete;
-        Logger(Logger&& other) = delete;
+        Logger& operator=(Logger&&) = delete;
+        Logger(Logger&&) = delete;
 
         template<typename... Args>
         static void Error(std::format_string<Args...> fmt, Args&&... args)

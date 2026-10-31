@@ -28,6 +28,9 @@ namespace Mango {
         static std::string GetExtension(const Path& path) { return path.extension().string(); }
         static std::string GetFileName(const Path& path) { return path.filename().string(); }
         static std::string GetStem(const Path& path) { return path.stem().string(); }
+
+        static void CreateCacheDirectories(Path cacheDir);
+        static const Path& GetCacheDirectory();
     };
 
     enum class FileMode : U8
@@ -62,7 +65,7 @@ namespace Mango {
 
         bool Seek(U64 position);
 
-        bool Read(void* buffer, U64 size);
+        bool Read(void* buffer, U64 size) const;
         bool Write(const void* buffer, U64 size);
 
         std::vector<U8> ReadAll();

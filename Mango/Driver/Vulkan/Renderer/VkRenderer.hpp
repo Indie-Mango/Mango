@@ -30,11 +30,9 @@ namespace Mango::Driver::Vulkan {
         void SetIndexBuffer(const Shared<IndexBuffer>& indexBuffer) override;
         void SetPipeline(const Shared<Pipeline>& pipeline) override;
 
-        void WaitIdle() override
-        {
-            vk::Result waitRes = m_Device.waitIdle();
-            ASSERT(waitRes == vk::Result::eSuccess, "Failed to wait for device idle");
-        }
+        void WaitIdle() override;
+
+        std::vector<vk::DescriptorSet> AllocateDescriptorSet(const std::vector<vk::DescriptorSetLayout>& layouts) const;
 
         void OnWindowResizeVk(const Window* window);
 
@@ -84,6 +82,8 @@ namespace Mango::Driver::Vulkan {
         vk::Image m_CurrentSwapchainImage;
 
         Unique<VkShaderCompiler> m_ShaderCompiler;
+
+        vk::DescriptorPool m_DescriptorPool;
 
         U32 m_GraphicsQueueFamilyIdx = ~0;
         U32 m_PresentQueueFamilyIdx = ~0;

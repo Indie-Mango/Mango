@@ -1,21 +1,16 @@
 #include "Engine.hpp"
 #include "Application.hpp"
 #include "Mango/Base/TimeStep.hpp"
+#include "Mango/Core/Filesystem.hpp"
 #include "Mango/ImGui/ImGuiContext.hpp"
 #include "Mango/Renderer/Renderer.hpp"
 
 #include <filesystem>
-#include <imgui.h>
 
 namespace Mango {
     Engine::Engine(std::vector<std::string>&& args, Arena& arena, AppCreateFunc appCreateFn) : m_Args(std::move(args)), m_Arena(arena)
     {
-        if (!std::filesystem::exists("Mango-cache")) // TODO: filesystem::createCacheDirs
-        {
-            std::filesystem::create_directory("Mango-cache");
-            std::filesystem::create_directory("Mango-cache/Shaders");
-        }
-
+        FileSystem::
         WindowContext::Create();
         m_Window = m_Arena.Create<Window>(this, WindowInfo{});
 
