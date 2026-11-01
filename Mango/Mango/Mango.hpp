@@ -14,6 +14,7 @@
 #include "Mango/Renderer/Renderer.hpp"
 
 #include "Mango/Graphics/Image.hpp"
+#include "Mango/Graphics/Texture.hpp"
 #include "Mango/Graphics/IndexBuffer.hpp"
 #include "Mango/Graphics/Material.hpp"
 #include "Mango/Graphics/Pipeline.hpp"

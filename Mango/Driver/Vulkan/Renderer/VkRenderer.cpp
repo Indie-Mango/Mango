@@ -20,10 +20,13 @@ namespace Mango::Driver::Vulkan {
         vk::SurfaceFormatKHR surfaceFormat = VkUtils::PickSurfaceFormat(available);
         m_Swapchain = Unique<VkSwapchain>::Create(m_VkbDevice, window->GetWidth(), window->GetHeight(), surfaceFormat);
 
-        m_ShaderCompiler = Unique<VkShaderCompiler>::Create(this, "Mango-Cache/Pipeline.cache", "Mango-Cache/Shaders");
+        m_ShaderCompiler = Unique<VkShaderCompiler>::Create(this, FileSystem::GetCacheDirectory() / "Pipeline.cache",
+                                                            FileSystem::GetCacheDirectory() / "Shaders");
 
+        // Gets copied to the swapchain, so it has to match the surface format exactly
         m_TargetImage =
-                Image::Create(this, window->GetWidth(), window->GetHeight(), ImageType::Color, ImageUsage::ColorAttachment, nullptr);
+                Image::Create(this, window->GetWidth(), window->GetHeight(), VkUtils::VkFormatToImageFormat(surfaceFormat.format),
+                              ImageType::Color, ImageUsage::ColorAttachment, nullptr);
     }
 
     VkRenderer::~VkRenderer()
@@ -216,6 +219,12 @@ namespace Mango::Driver::Vulkan {
 
         vk::Result res = m_TransferQueue.submit(submission, m_TransferFence);
         ASSERT(res == vk::Result::eSuccess, "Failed to submit transfer command buffer to queue");
+    }
+
+    void VkRenderer::WaitForTransfer() const
+    {
+        vk::Result waitRes = m_Device.waitForFences(m_TransferFence, vk::True, std::numeric_limits<U64>::max());
+        ASSERT(waitRes == vk::Result::eSuccess, "Failed to wait for transfer operation complete");
     }
 
     vk::CommandBuffer VkRenderer::GetTransferCommandBufferRaw() const

@@ -23,31 +23,60 @@ namespace {
 
             Mango::VertexBufferLayout vertexBufferLayout = {
                     Mango::ShaderDataType::Float3, // position
-                    Mango::ShaderDataType::Float3 // color
+                    Mango::ShaderDataType::Float2, // texCoord
             };
 
             Mango::F32 vertices[]{
-                    0.0f,  0.5f,  1.0f, 1.0f, 0.0f, 0.0f, // TOP
-                    -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, 0.0f, // BOTTOM - LEFT
-                    0.5f,  -0.5f, 1.0f, 0.0f, 0.0f, 1.0f // BOTTOM - RIGHT
+                    -0.5f, 0.5f,  0.0f, 0.0f, 0.0f, // TOP - LEFT
+                    -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, // BOTTOM - LEFT
+                    0.5f,  -0.5f, 0.0f, 1.0f, 1.0f, // BOTTOM - RIGHT
+                    0.5f,  0.5f,  0.0f, 1.0f, 0.0f // TOP - RIGHT
             };
 
-            std::vector<Mango::U32> indices = {0, 1, 2};
+            std::vector<Mango::U32> indices = {
+                    0, 1, 2, // 1
+                    2, 3, 0 // 2
+            };
 
-            m_VertexBuffer = Mango::VertexBuffer::Create(engine->GetRenderer(), vertexBufferLayout, 3, vertices);
+            m_VertexBuffer = Mango::VertexBuffer::Create(engine->GetRenderer(), vertexBufferLayout,
+                                                         sizeof(vertices) / vertexBufferLayout.Stride, vertices);
             m_IndexBuffer = Mango::IndexBuffer::Create(engine->GetRenderer(), indices);
 
             Mango::PipelineInfo pipelineInfo;
             pipelineInfo.VertexBufferLayout = vertexBufferLayout;
-            pipelineInfo.PipelineLayout = Mango::PipelineLayout{
-                    .DescriptorSets = {Mango::PipelineDescriptorSet{.Descriptors = {Mango::PipelineDescriptorType::UniformBuffer},
-                                                                    .Stage = Mango::PipelineStage::Vertex}}};
+
+            // clang-format off
+            Mango::PipelineLayout layout{
+                .DescriptorSets = {
+                    {
+                        .Descriptors = {
+                            {.Binding = 0, .Type = Mango::PipelineDescriptorType::UniformBuffer},
+                        },
+                        .Set = 0,
+                        .Stage = Mango::PipelineStage::Vertex
+                    },
+                    {
+                        .Descriptors = {
+                            {.Binding = 0, .Type = Mango::PipelineDescriptorType::Texture}
+                        },
+                        .Set = 1,
+                        .Stage = Mango::PipelineStage::Fragment
+                    }
+                }
+            };
+            // clang-format on
+
+            pipelineInfo.PipelineLayout = layout;
 
             Mango::File vertShader{"Sandbox/Assets/Shaders/Basic.vert", Mango::FileMode::Read};
             Mango::File fragShader{"Sandbox/Assets/Shaders/Basic.frag", Mango::FileMode::Read};
             m_pipeline = Mango::Pipeline::Create(engine->GetRenderer(), pipelineInfo, vertShader, fragShader);
             m_Material = Mango::Material::Create(engine->GetRenderer(), m_pipeline.Raw());
             m_UniformBuffer = Mango::UniformBuffer::Create(engine->GetRenderer(), 3 * sizeof(glm::mat4));
+            m_Material->SetBuffer(0, 0, m_UniformBuffer);
+
+            m_Texture = Mango::Texture{engine->GetRenderer(), "Sandbox/Assets/Textures/Smiley.png"};
+            m_Material->SetTexture(1, 0, m_Texture);
 
             Mango::Window* window = engine->GetWindow();
             m_MVP.Proj = glm::perspectiveZO(
@@ -73,7 +102,6 @@ namespace {
         void Render(Mango::F32 ts, Mango::Renderer* renderer) const override
         {
             m_UniformBuffer->Write(&m_MVP, sizeof(m_MVP));
-            m_Material->SetBuffer(0, 0, m_UniformBuffer);
             m_Material->Update();
             m_Material->Bind();
 
@@ -98,6 +126,7 @@ namespace {
         Mango::Shared<Mango::Pipeline> m_pipeline;
         Mango::Shared<Mango::Material> m_Material;
         Mango::Shared<Mango::UniformBuffer> m_UniformBuffer;
+        Mango::Texture m_Texture;
         MVP m_MVP;
 
         glm::vec3 m_Position{0.0f};

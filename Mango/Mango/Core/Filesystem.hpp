@@ -16,6 +16,7 @@ namespace Mango {
 
         static bool CreateDirectory(const Path& path) { return std::filesystem::create_directory(path); }
         static bool CreateDirectories(const Path& path) { return std::filesystem::create_directories(path); }
+        static void CreateFile(const Path& path) { std::ofstream fileCreate(path, std::ios::binary); }
         static bool Delete(const Path& path) { return std::filesystem::remove(path); }
 
         static std::vector<Path> ListDirectory(const Path& path);

@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Mango/Common/CommonTypes.hpp"
+#include "Mango/Graphics/Image.hpp"
 
 #include <vulkan/vulkan.hpp>
 
@@ -9,6 +10,9 @@ namespace Mango {
     {
         static U32 FindMemoryTypeIdx(U32 filter, vk::MemoryPropertyFlags properties, vk::PhysicalDevice pd);
         static vk::SurfaceFormatKHR PickSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats);
+
+        static vk::Format ImageFormatToVk(ImageFormat format);
+        static ImageFormat VkFormatToImageFormat(vk::Format format);
 
         static void TransitionImageLayout(vk::CommandBuffer commandBuffer, vk::ImageLayout from, vk::ImageLayout to,
                                           vk::PipelineStageFlags2 srcStage, vk::PipelineStageFlags2 dstStage,

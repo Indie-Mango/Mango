@@ -38,7 +38,7 @@ namespace Mango {
     enum class PipelineDescriptorType : U8
     {
         UniformBuffer,
-        SampledImage,
+        Texture,
     };
 
     enum class PipelineStage : U8
@@ -49,9 +49,16 @@ namespace Mango {
         All = Vertex | Fragment
     };
 
+    struct PipelineDescriptor
+    {
+        U32 Binding;
+        PipelineDescriptorType Type;
+    };
+
     struct PipelineDescriptorSet
     {
-        std::vector<PipelineDescriptorType> Descriptors;
+        std::vector<PipelineDescriptor> Descriptors;
+        U32 Set;
         PipelineStage Stage = PipelineStage::None;
     };
 

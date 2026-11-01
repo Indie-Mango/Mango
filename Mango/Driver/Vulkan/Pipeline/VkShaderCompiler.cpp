@@ -10,21 +10,19 @@
 #include <shaderc/shaderc.hpp>
 
 namespace Mango::Driver::Vulkan {
-    VkShaderCompiler::VkShaderCompiler(VkRenderer* renderer, std::string pipelineCache, std::string outputDir) :
+    VkShaderCompiler::VkShaderCompiler(VkRenderer* renderer, Path pipelineCache, Path outputDir) :
         m_Renderer(renderer), m_PipelineCachePath(std::move(pipelineCache)), m_OutputDir(std::move(outputDir))
     {
-        if (!std::filesystem::exists(m_PipelineCachePath))
+        if (!FileSystem::Exists(m_PipelineCachePath))
         {
-            std::ofstream fileCreate(m_PipelineCachePath, std::ios::binary);
+            FileSystem::CreateFile(m_PipelineCachePath);
         }
 
-        std::ifstream file(m_PipelineCachePath, std::ios::ate | std::ios::binary);
-        ASSERT(file.is_open(), "Failed to open file");
-        std::streamsize fileSize = file.tellg();
-        file.seekg(0);
+        File file{m_PipelineCachePath, FileMode::Read};
+        USize fileSize = file.GetSize();
 
         std::vector<char> data(fileSize);
-        file.read(data.data(), fileSize);
+        file.Read(data.data(), fileSize);
 
         vk::PipelineCacheCreateInfo cacheInfo;
         cacheInfo.initialDataSize = data.size();

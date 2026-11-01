@@ -17,8 +17,7 @@ namespace Mango::Driver::Vulkan {
     class VkShaderCompiler
     {
     public:
-        // TODO: Filesystem handle
-        VkShaderCompiler(VkRenderer* renderer, std::string pipelineCache, std::string outputDir);
+        VkShaderCompiler(VkRenderer* renderer, Path pipelineCache, Path outputDir);
         ~VkShaderCompiler();
 
         VkShaderCompiler(const VkShaderCompiler&) = delete;
@@ -38,8 +37,8 @@ namespace Mango::Driver::Vulkan {
 
     private:
         VkRenderer* m_Renderer = nullptr;
-        std::string m_PipelineCachePath;
-        std::string m_OutputDir;
+        Path m_PipelineCachePath;
+        Path m_OutputDir;
 
         vk::PipelineCache m_PipelineCache;
     };

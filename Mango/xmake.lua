@@ -7,6 +7,8 @@ add_requires("glfw")
 
 add_requires("glm")
 
+add_requires("stb")
+
 add_requires("imgui v1.92.9-docking", {
     configs = {
         glfw = true,
@@ -25,7 +27,8 @@ target("Mango-Driver")
     add_defines("GLFW_INCLUDE_VULKAN", {public = true})
     add_packages("glfw", {public = true})
     add_packages("glm", {public = true})
-    add_packages("imgui", {public =true})
+    add_packages("stb", {public = true})
+    add_packages("imgui", {public = true})
 
     if is_mode("debug") then
         add_defines("MANGO_DEBUG")

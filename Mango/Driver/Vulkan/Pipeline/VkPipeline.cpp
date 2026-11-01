@@ -125,7 +125,7 @@ namespace Mango::Driver::Vulkan {
                 {
                     case PipelineDescriptorType::UniformBuffer:
                         return vk::DescriptorType::eUniformBuffer;
-                    case PipelineDescriptorType::SampledImage:
+                    case PipelineDescriptorType::Texture:
                         return vk::DescriptorType::eCombinedImageSampler;
                 }
 
@@ -177,18 +177,24 @@ namespace Mango::Driver::Vulkan {
     {
         vk::Device d = m_Renderer->GetDevice();
 
-        m_DescriptorSetLayouts.reserve(layout.DescriptorSets.size());
+        U32 maxSet = 0;
 
-        for (const auto& [descriptors, stage]: layout.DescriptorSets)
+        for (const auto& entry: layout.DescriptorSets)
+            maxSet = std::max(maxSet, entry.Set);
+
+        if (!layout.DescriptorSets.empty())
+            m_DescriptorSetLayouts.resize(maxSet + 1);
+
+        for (const auto& [descriptors, Set, stage]: layout.DescriptorSets)
         {
             std::vector<vk::DescriptorSetLayoutBinding> bindings;
             bindings.reserve(descriptors.size());
 
-            for (U32 i = 0; i < static_cast<U32>(descriptors.size()); i++)
+            for (auto descriptor : descriptors)
             {
                 vk::DescriptorSetLayoutBinding binding;
-                binding.binding = i;
-                binding.descriptorType = Utils::PipelineDescTypeToVk(descriptors[i]);
+                binding.binding = descriptor.Binding;
+                binding.descriptorType = Utils::PipelineDescTypeToVk(descriptor.Type);
                 binding.descriptorCount = 1;
                 binding.stageFlags = Utils::PipelineStageToVk(stage);
 
@@ -198,9 +204,11 @@ namespace Mango::Driver::Vulkan {
             vk::DescriptorSetLayoutCreateInfo setInfo;
             setInfo.bindingCount = static_cast<U32>(bindings.size());
             setInfo.pBindings = bindings.data();
+            
             vk::ResultValue<vk::DescriptorSetLayout> setRes = d.createDescriptorSetLayout(setInfo);
             ASSERT(setRes.result == vk::Result::eSuccess, "Failed to create descriptor set layout");
-            m_DescriptorSetLayouts.push_back(setRes.value);
+            
+            m_DescriptorSetLayouts[Set] = setRes.value;
         }
     }
 

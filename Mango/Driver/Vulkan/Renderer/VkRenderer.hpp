@@ -47,6 +47,7 @@ namespace Mango::Driver::Vulkan {
         vk::CommandBuffer GetGraphicsCommandBufferRaw() const { return m_GraphicsCommandBuffer.Raw(); }
 
         void SubmitTransfer() const;
+        void WaitForTransfer() const;
         U32 GetTransferQueueFamilyIdx() const { return m_TransferQueueFamilyIdx; }
         vk::CommandBuffer GetTransferCommandBufferRaw() const;
 

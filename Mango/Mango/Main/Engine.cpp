@@ -10,7 +10,7 @@
 namespace Mango {
     Engine::Engine(std::vector<std::string>&& args, Arena& arena, AppCreateFunc appCreateFn) : m_Args(std::move(args)), m_Arena(arena)
     {
-        FileSystem::
+        FileSystem::CreateCacheDirectories("Mango-Cache");
         WindowContext::Create();
         m_Window = m_Arena.Create<Window>(this, WindowInfo{});
 

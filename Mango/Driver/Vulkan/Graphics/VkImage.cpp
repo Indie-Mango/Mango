@@ -15,7 +15,8 @@ namespace Mango::Driver::Vulkan {
                         return vk::ImageAspectFlagBits::eColor;
                 }
 
-                return vk::ImageAspectFlagBits::eNone;
+                Logger::Error("Invalid image type");
+                MANGO_EXIT_PROGRAM();
             }
 
             vk::ImageUsageFlags MangoImageUsageToVulkanImageUsage(ImageUsage usage)
@@ -24,23 +25,37 @@ namespace Mango::Driver::Vulkan {
                 {
                     case ImageUsage::ColorAttachment:
                         return vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment;
+                    case ImageUsage::Texture:
+                        return vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
                 }
 
-                return vk::ImageUsageFlagBits::eSampled;
+                Logger::Error("Invalid image usage");
+                MANGO_EXIT_PROGRAM();
             }
+
         } // namespace Utils
     } // namespace
 
-    VkImage::VkImage(VkRenderer* renderer, U32 width, U32 height, ImageType type, ImageUsage usage, const void* data) :
-        Image(width, height), m_Renderer(renderer), m_Usage(Utils::MangoImageUsageToVulkanImageUsage(usage)),
-        m_Format(renderer->GetSurfaceFormat().format), m_Aspect(Utils::MangoImageTypeToVulkanImageAspect(type))
+    VkImage::VkImage(VkRenderer* renderer, U32 width, U32 height, ImageFormat format, ImageType type, ImageUsage usage,
+                     const void* data) :
+        Image(width, height, format), m_Renderer(renderer), m_MangoUsage(usage),
+        m_Usage(Utils::MangoImageUsageToVulkanImageUsage(usage)), m_VkFormat(VkUtils::ImageFormatToVk(format)),
+        m_Aspect(Utils::MangoImageTypeToVulkanImageAspect(type))
     {
+        ASSERT(IsFormatSupported(), "Image format {} is not supported for this usage on this device", vk::to_string(m_VkFormat));
+
+        CreateSampler();
         Allocate();
+
         if (data)
-            SetData(data, static_cast<USize>(m_Width) * m_Height * 4);
+            VkImage::SetData(data);
     }
 
-    VkImage::~VkImage() { Free(); }
+    VkImage::~VkImage()
+    {
+        Free();
+        m_Renderer->GetDevice().destroySampler(m_Sampler);
+    }
 
     void VkImage::Resize(U32 width, U32 height)
     {
@@ -53,6 +68,7 @@ namespace Mango::Driver::Vulkan {
         m_Width = width;
         m_Height = height;
 
+        // NOTE: Contents are lost, a texture has to be re-uploaded with SetData
         Free();
         Allocate();
     }
@@ -64,11 +80,44 @@ namespace Mango::Driver::Vulkan {
         VkUtils::TransitionImageLayout(commandBuffer, from, to, srcStage, dstStage, srcAccess, dstAccess, m_Aspect, m_Image);
     }
 
-    // TODO: Store image size internally or calculate based on format width and height
-    void VkImage::SetData(const void* data, USize size)
+    void VkImage::SetData(const void* data)
     {
+        ASSERT(m_Usage & vk::ImageUsageFlagBits::eTransferDst, "Image was not created with an usage that allows uploading data");
+
         vk::PhysicalDevice pd = m_Renderer->GetPhysicalDevice();
         vk::Device d = m_Renderer->GetDevice();
+
+        const USize size = GetDataSize();
+
+        // Staging buffer only lives for the duration of the upload
+        vk::BufferCreateInfo stagingBufferInfo;
+        stagingBufferInfo.size = size;
+        stagingBufferInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
+        stagingBufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+        vk::ResultValue<vk::Buffer> stagingBufferRes = d.createBuffer(stagingBufferInfo);
+        ASSERT(stagingBufferRes.result == vk::Result::eSuccess, "Failed to create staging buffer");
+        vk::Buffer stagingBuffer = stagingBufferRes.value;
+
+        vk::MemoryRequirements memoryRequirements = d.getBufferMemoryRequirements(stagingBuffer);
+
+        vk::MemoryAllocateInfo allocInfo;
+        allocInfo.allocationSize = memoryRequirements.size;
+        allocInfo.memoryTypeIndex =
+                VkUtils::FindMemoryTypeIdx(memoryRequirements.memoryTypeBits,
+                                           vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, pd);
+
+        vk::ResultValue<vk::DeviceMemory> stagingMemoryRes = d.allocateMemory(allocInfo);
+        ASSERT(stagingMemoryRes.result == vk::Result::eSuccess, "Failed to allocate memory for staging buffer");
+        vk::DeviceMemory stagingMemory = stagingMemoryRes.value;
+
+        vk::Result memoryBindRes = d.bindBufferMemory(stagingBuffer, stagingMemory, 0);
+        ASSERT(memoryBindRes == vk::Result::eSuccess, "Failed to bind staging buffer memory to buffer");
+
+        vk::ResultValue<void*> mapRes = d.mapMemory(stagingMemory, 0, size);
+        ASSERT(mapRes.result == vk::Result::eSuccess, "Failed to map memory of staging buffer");
+        memcpy(mapRes.value, data, size);
+        d.unmapMemory(stagingMemory);
 
         vk::CommandBuffer transferCommandBuffer = m_Renderer->GetTransferCommandBufferRaw();
 
@@ -77,95 +126,33 @@ namespace Mango::Driver::Vulkan {
         vk::Result beginRes = transferCommandBuffer.begin(beginInfo);
         ASSERT(beginRes == vk::Result::eSuccess, "Failed to begin transfer command buffer recording");
 
-        if (!m_StagingBuffer)
-        {
-            U32 transferQueueFamilyIdx = m_Renderer->GetTransferQueueFamilyIdx();
+        // Previous contents are discarded
+        TransitionLayout(transferCommandBuffer, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
+                         vk::PipelineStageFlagBits2::eNone, vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eNone,
+                         vk::AccessFlagBits2::eTransferWrite);
 
-            vk::BufferCreateInfo stagingBufferInfo;
-            stagingBufferInfo.size = size;
-            stagingBufferInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
-            stagingBufferInfo.sharingMode = vk::SharingMode::eExclusive;
-            stagingBufferInfo.queueFamilyIndexCount = 1;
-            stagingBufferInfo.pQueueFamilyIndices = &transferQueueFamilyIdx;
+        vk::BufferImageCopy region;
+        region.imageSubresource.aspectMask = m_Aspect;
+        region.imageSubresource.mipLevel = 0;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount = 1;
+        region.imageExtent = vk::Extent3D{m_Width, m_Height, 1};
+        transferCommandBuffer.copyBufferToImage(stagingBuffer, m_Image, vk::ImageLayout::eTransferDstOptimal, region);
 
-            vk::ResultValue<vk::Buffer> stagingBuffer = d.createBuffer(stagingBufferInfo);
-            ASSERT(stagingBuffer.result == vk::Result::eSuccess, "Failed to create staging buffer");
-            m_StagingBuffer = stagingBuffer.value;
-
-            vk::MemoryRequirements memoryRequirements;
-            d.getBufferMemoryRequirements(m_StagingBuffer, &memoryRequirements);
-            m_AlignedSize = memoryRequirements.size;
-
-            vk::MemoryAllocateInfo allocInfo;
-            allocInfo.allocationSize = memoryRequirements.size;
-            allocInfo.memoryTypeIndex = VkUtils::FindMemoryTypeIdx(
-                    memoryRequirements.memoryTypeBits,
-                    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, pd);
-
-            vk::ResultValue<vk::DeviceMemory> memory = d.allocateMemory(allocInfo);
-            ASSERT(memory.result == vk::Result::eSuccess, "Failed to allocate memory for staging buffer");
-            m_StagingBufferMemory = memory.value;
-
-            vk::Result memoryBindRes = d.bindBufferMemory(m_StagingBuffer, m_StagingBufferMemory, 0);
-            ASSERT(memoryBindRes == vk::Result::eSuccess, "Failed to bind staging buffer memory to buffer");
-        }
-
-        vk::ResultValue<void*> mapRes = d.mapMemory(m_StagingBufferMemory, 0, m_AlignedSize);
-        ASSERT(mapRes.result == vk::Result::eSuccess, "Failed to map memory of staging buffer");
-        void* mapped = mapRes.value;
-
-        memcpy(mapped, data, size);
-
-        d.unmapMemory(m_StagingBufferMemory);
-
-        {
-            vk::ImageMemoryBarrier copyBarrier;
-            copyBarrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
-            copyBarrier.oldLayout = vk::ImageLayout::eUndefined;
-            copyBarrier.newLayout = vk::ImageLayout::eTransferDstOptimal;
-            copyBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            copyBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            copyBarrier.image = m_Image;
-            copyBarrier.subresourceRange.aspectMask = m_Aspect;
-            copyBarrier.subresourceRange.layerCount = 1;
-            copyBarrier.subresourceRange.levelCount = 1;
-
-            transferCommandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eHost, vk::PipelineStageFlagBits::eTransfer, {}, 0,
-                                                  nullptr, 0, nullptr, 1, &copyBarrier);
-        }
-
-        {
-            vk::BufferImageCopy region;
-            region.imageSubresource.aspectMask = m_Aspect;
-            region.imageSubresource.layerCount = 1;
-            region.imageExtent = vk::Extent3D{m_Width, m_Height, 1};
-            transferCommandBuffer.copyBufferToImage(m_StagingBuffer, m_Image, vk::ImageLayout::eTransferDstOptimal, region);
-        }
-
-        {
-            vk::ImageMemoryBarrier useBarrier;
-            useBarrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-            useBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-            useBarrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
-            useBarrier.newLayout = vk::ImageLayout::eUndefined;
-            useBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            useBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            useBarrier.image = m_Image;
-            useBarrier.subresourceRange.aspectMask = m_Aspect;
-            useBarrier.subresourceRange.layerCount = 1;
-            useBarrier.subresourceRange.levelCount = 1;
-
-            transferCommandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, {},
-                                                  {}, {}, useBarrier);
-        }
+        // The transfer queue does not support shader stages, so dstStage stays eNone here.
+        // Visibility for the graphics queue is guaranteed by waiting on the transfer fence below.
+        TransitionLayout(transferCommandBuffer, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+                         vk::PipelineStageFlagBits2::eCopy, vk::PipelineStageFlagBits2::eNone, vk::AccessFlagBits2::eTransferWrite,
+                         vk::AccessFlagBits2::eNone);
 
         vk::Result endRes = transferCommandBuffer.end();
         ASSERT(endRes == vk::Result::eSuccess, "Failed to end transfer command buffer recording");
 
-        vk::SubmitInfo submission;
-        submission.commandBufferCount = 1;
-        submission.pCommandBuffers = &transferCommandBuffer;
         m_Renderer->SubmitTransfer();
+        m_Renderer->WaitForTransfer();
+
+        d.destroyBuffer(stagingBuffer);
+        d.free(stagingMemory);
     }
 
     void VkImage::Allocate()
@@ -175,14 +162,28 @@ namespace Mango::Driver::Vulkan {
 
         vk::ImageCreateInfo imageInfo;
         imageInfo.imageType = vk::ImageType::e2D;
-        imageInfo.format = m_Format;
+        imageInfo.format = m_VkFormat;
         imageInfo.extent = vk::Extent3D{m_Width, m_Height, 1};
         imageInfo.mipLevels = 1;
         imageInfo.arrayLayers = 1;
         imageInfo.samples = vk::SampleCountFlagBits::e1;
         imageInfo.tiling = vk::ImageTiling::eOptimal;
         imageInfo.usage = m_Usage;
-        imageInfo.sharingMode = vk::SharingMode::eExclusive;
+        imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+
+        // Textures are written on the (dedicated) transfer queue and read on the graphics queue.
+        // Concurrent sharing avoids having to do queue family ownership transfers.
+        std::array queueFamilies = {m_Renderer->GetGraphicsQueueFamilyIdx(), m_Renderer->GetTransferQueueFamilyIdx()};
+        if (m_MangoUsage == ImageUsage::Texture && queueFamilies[0] != queueFamilies[1])
+        {
+            imageInfo.sharingMode = vk::SharingMode::eConcurrent;
+            imageInfo.queueFamilyIndexCount = static_cast<U32>(queueFamilies.size());
+            imageInfo.pQueueFamilyIndices = queueFamilies.data();
+        }
+        else
+        {
+            imageInfo.sharingMode = vk::SharingMode::eExclusive;
+        }
 
         vk::ResultValue<vk::Image> imageRes = d.createImage(imageInfo);
         ASSERT(imageRes.result == vk::Result::eSuccess, "Failed to create vulkan image");
@@ -191,7 +192,8 @@ namespace Mango::Driver::Vulkan {
         vk::MemoryRequirements memoryRequirements = d.getImageMemoryRequirements(m_Image);
         vk::MemoryAllocateInfo allocInfo;
         allocInfo.allocationSize = memoryRequirements.size;
-        allocInfo.memoryTypeIndex = VkUtils::FindMemoryTypeIdx(memoryRequirements.memoryTypeBits, m_MemoryProperties, pd);
+        allocInfo.memoryTypeIndex =
+                VkUtils::FindMemoryTypeIdx(memoryRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal, pd);
         vk::ResultValue<vk::DeviceMemory> memory = d.allocateMemory(allocInfo);
         ASSERT(memory.result == vk::Result::eSuccess, "Failed to allocate memory for image");
         m_Memory = memory.value;
@@ -202,7 +204,7 @@ namespace Mango::Driver::Vulkan {
         vk::ImageViewCreateInfo viewInfo;
         viewInfo.image = m_Image;
         viewInfo.viewType = vk::ImageViewType::e2D;
-        viewInfo.format = m_Format;
+        viewInfo.format = m_VkFormat;
         viewInfo.subresourceRange.aspectMask = m_Aspect;
         viewInfo.subresourceRange.layerCount = 1;
         viewInfo.subresourceRange.baseArrayLayer = 0;
@@ -212,7 +214,24 @@ namespace Mango::Driver::Vulkan {
         vk::ResultValue<vk::ImageView> view = d.createImageView(viewInfo);
         ASSERT(view.result == vk::Result::eSuccess, "Failed to create image view");
         m_View = view.value;
+    }
 
+    void VkImage::Free()
+    {
+        vk::Device d = m_Renderer->GetDevice();
+
+        d.destroyImageView(m_View);
+        d.destroyImage(m_Image);
+        d.free(m_Memory);
+
+        m_View = nullptr;
+        m_Image = nullptr;
+        m_Memory = nullptr;
+    }
+
+    // Independent of the image size, so it survives a Resize
+    void VkImage::CreateSampler()
+    {
         // TODO: Params
         vk::SamplerCreateInfo samplerInfo;
         samplerInfo.magFilter = vk::Filter::eLinear;
@@ -221,26 +240,35 @@ namespace Mango::Driver::Vulkan {
         samplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
         samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
         samplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
-        samplerInfo.minLod = -1000.0f;
-        samplerInfo.maxLod = 1000.0f;
-        samplerInfo.maxAnisotropy = 1.0f;
+        samplerInfo.minLod = 0.0f;
+        samplerInfo.maxLod = vk::LodClampNone;
         samplerInfo.anisotropyEnable = vk::False;
+        samplerInfo.maxAnisotropy = 1.0f;
 
-        vk::ResultValue<vk::Sampler> sampler = d.createSampler(samplerInfo);
+        vk::ResultValue<vk::Sampler> sampler = m_Renderer->GetDevice().createSampler(samplerInfo);
         ASSERT(sampler.result == vk::Result::eSuccess, "Failed to create sampler");
         m_Sampler = sampler.value;
     }
 
-    void VkImage::Free() const
+    USize VkImage::GetDataSize() const
     {
-        vk::Device d = m_Renderer->GetDevice();
+        return static_cast<USize>(m_Width) * m_Height * ImageFormatBytesPerPixel(m_Format);
+    }
 
-        d.destroyBuffer(m_StagingBuffer);
-        d.free(m_StagingBufferMemory);
+    bool VkImage::IsFormatSupported() const
+    {
+        vk::FormatProperties properties = m_Renderer->GetPhysicalDevice().getFormatProperties(m_VkFormat);
+        vk::FormatFeatureFlags features = properties.optimalTilingFeatures;
 
-        d.destroySampler(m_Sampler);
-        d.destroyImageView(m_View);
-        d.destroyImage(m_Image);
-        d.free(m_Memory);
+        if ((m_Usage & vk::ImageUsageFlagBits::eSampled) && !(features & vk::FormatFeatureFlagBits::eSampledImage))
+            return false;
+        if ((m_Usage & vk::ImageUsageFlagBits::eColorAttachment) && !(features & vk::FormatFeatureFlagBits::eColorAttachment))
+            return false;
+        if ((m_Usage & vk::ImageUsageFlagBits::eTransferDst) && !(features & vk::FormatFeatureFlagBits::eTransferDst))
+            return false;
+        if ((m_Usage & vk::ImageUsageFlagBits::eTransferSrc) && !(features & vk::FormatFeatureFlagBits::eTransferSrc))
+            return false;
+
+        return true;
     }
 } // namespace Mango::Driver::Vulkan

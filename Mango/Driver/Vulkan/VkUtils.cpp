@@ -1,5 +1,8 @@
 ﻿#include "VkUtils.hpp"
 
+#include "Mango/Core/Core.hpp"
+#include "Mango/Core/Logger.hpp"
+
 namespace Mango {
     U32 VkUtils::FindMemoryTypeIdx(U32 filter, vk::MemoryPropertyFlags properties, vk::PhysicalDevice pd)
     {
@@ -25,6 +28,60 @@ namespace Mango {
         });
 
         return formatIt != availableFormats.end() ? *formatIt : availableFormats[0];
+    }
+
+    vk::Format VkUtils::ImageFormatToVk(ImageFormat format)
+    {
+        switch (format)
+        {
+            case ImageFormat::R8Unorm:
+                return vk::Format::eR8Unorm;
+            case ImageFormat::RG8Unorm:
+                return vk::Format::eR8G8Unorm;
+            case ImageFormat::RGBA8Unorm:
+                return vk::Format::eR8G8B8A8Unorm;
+            case ImageFormat::RGBA8Srgb:
+                return vk::Format::eR8G8B8A8Srgb;
+            case ImageFormat::BGRA8Unorm:
+                return vk::Format::eB8G8R8A8Unorm;
+            case ImageFormat::BGRA8Srgb:
+                return vk::Format::eB8G8R8A8Srgb;
+            case ImageFormat::RGBA16Float:
+                return vk::Format::eR16G16B16A16Sfloat;
+            case ImageFormat::RGBA32Float:
+                return vk::Format::eR32G32B32A32Sfloat;
+        }
+
+        Logger::Error("Invalid image format");
+        MANGO_EXIT_PROGRAM();
+    }
+
+    ImageFormat VkUtils::VkFormatToImageFormat(vk::Format format)
+    {
+        switch (format)
+        {
+            case vk::Format::eR8Unorm:
+                return ImageFormat::R8Unorm;
+            case vk::Format::eR8G8Unorm:
+                return ImageFormat::RG8Unorm;
+            case vk::Format::eR8G8B8A8Unorm:
+                return ImageFormat::RGBA8Unorm;
+            case vk::Format::eR8G8B8A8Srgb:
+                return ImageFormat::RGBA8Srgb;
+            case vk::Format::eB8G8R8A8Unorm:
+                return ImageFormat::BGRA8Unorm;
+            case vk::Format::eB8G8R8A8Srgb:
+                return ImageFormat::BGRA8Srgb;
+            case vk::Format::eR16G16B16A16Sfloat:
+                return ImageFormat::RGBA16Float;
+            case vk::Format::eR32G32B32A32Sfloat:
+                return ImageFormat::RGBA32Float;
+            default:
+                break;
+        }
+
+        Logger::Error("Vulkan format {} has no matching image format", vk::to_string(format));
+        MANGO_EXIT_PROGRAM();
     }
 
     void VkUtils::TransitionImageLayout(vk::CommandBuffer commandBuffer, vk::ImageLayout from, vk::ImageLayout to,
