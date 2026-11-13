@@ -78,10 +78,20 @@ namespace {
             m_Texture = Mango::Texture{engine->GetRenderer(), "Sandbox/Assets/Textures/Smiley.png"};
             m_Material->SetTexture(1, 0, m_Texture);
 
+            m_Material2 = Mango::Material::Create(engine->GetRenderer(), m_pipeline.Raw());
+            m_UniformBuffer2 = Mango::UniformBuffer::Create(engine->GetRenderer(), 3 * sizeof(glm::mat4));
+            m_Material2->SetBuffer(0, 0, m_UniformBuffer2);
+
+            m_Texture2 = Mango::Texture{engine->GetRenderer(), "Sandbox/Assets/Textures/NoTexture.png"};
+            m_Material2->SetTexture(1, 0, m_Texture2);
+
             Mango::Window* window = engine->GetWindow();
             m_MVP.Proj = glm::perspectiveZO(
                     45.0f, static_cast<Mango::F32>(window->GetWidth()) / static_cast<Mango::F32>(window->GetHeight()), 0.01f, 1000.0f);
             m_MVP.View = glm::translate(glm::mat4{1.0f}, glm::vec3{0.0f, 0.0f, -10.0f});
+
+            m_MVP.Model = glm::translate(glm::mat4{1.0f}, {0.0f, 0.0f, -5.0f});
+            m_UniformBuffer2->Write(&m_MVP, sizeof(m_MVP));
         }
 
         void Update(Mango::F32 ts) override
@@ -101,13 +111,18 @@ namespace {
 
         void Render(Mango::F32 ts, Mango::Renderer* renderer) const override
         {
+            renderer->SetVertexBuffer(m_VertexBuffer);
+            renderer->SetIndexBuffer(m_IndexBuffer);
+            renderer->SetPipeline(m_pipeline);
+
             m_UniformBuffer->Write(&m_MVP, sizeof(m_MVP));
             m_Material->Update();
             m_Material->Bind();
 
-            renderer->SetVertexBuffer(m_VertexBuffer);
-            renderer->SetIndexBuffer(m_IndexBuffer);
-            renderer->SetPipeline(m_pipeline);
+            renderer->DrawIndexed(m_IndexBuffer->GetIndexCount());
+
+            m_Material2->Update();
+            m_Material2->Bind();
             renderer->DrawIndexed(m_IndexBuffer->GetIndexCount());
         }
 
@@ -125,8 +140,11 @@ namespace {
         Mango::Shared<Mango::IndexBuffer> m_IndexBuffer;
         Mango::Shared<Mango::Pipeline> m_pipeline;
         Mango::Shared<Mango::Material> m_Material;
+        Mango::Shared<Mango::Material> m_Material2;
         Mango::Shared<Mango::UniformBuffer> m_UniformBuffer;
+        Mango::Shared<Mango::UniformBuffer> m_UniformBuffer2;
         Mango::Texture m_Texture;
+        Mango::Texture m_Texture2;
         MVP m_MVP;
 
         glm::vec3 m_Position{0.0f};
