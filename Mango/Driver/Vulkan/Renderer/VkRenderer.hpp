@@ -52,6 +52,7 @@ namespace Mango::Driver::Vulkan {
         vk::CommandBuffer GetTransferCommandBufferRaw() const;
 
         vk::SurfaceFormatKHR GetSurfaceFormat() const { return m_Swapchain->GetFormat(); }
+        vk::Format GetDepthFormat() const;
 
         VkShaderCompiler* GetShaderCompiler() const { return m_ShaderCompiler.Raw(); }
 
@@ -91,6 +92,8 @@ namespace Mango::Driver::Vulkan {
         U32 m_TransferQueueFamilyIdx = ~0;
 
         U32 m_CurrenSwapchainImageIdx = ~0;
+
+        Shared<Image> m_DepthImage;
 
         bool m_Rendering = false;
     };

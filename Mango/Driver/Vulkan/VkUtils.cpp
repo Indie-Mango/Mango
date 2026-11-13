@@ -50,6 +50,8 @@ namespace Mango {
                 return vk::Format::eR16G16B16A16Sfloat;
             case ImageFormat::RGBA32Float:
                 return vk::Format::eR32G32B32A32Sfloat;
+            case ImageFormat::Depth32:
+                return vk::Format::eD32Sfloat;
         }
 
         Logger::Error("Invalid image format");
@@ -76,6 +78,8 @@ namespace Mango {
                 return ImageFormat::RGBA16Float;
             case vk::Format::eR32G32B32A32Sfloat:
                 return ImageFormat::RGBA32Float;
+            case vk::Format::eD32Sfloat:
+                return ImageFormat::Depth32;
             default:
                 break;
         }

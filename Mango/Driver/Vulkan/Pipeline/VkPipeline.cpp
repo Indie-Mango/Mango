@@ -62,7 +62,7 @@ namespace Mango::Driver::Vulkan {
                     case PipelineInputType::TriangleList:
                         return vk::PrimitiveTopology::eTriangleList;
                     case PipelineInputType::TriangleStrip:
-                        return vk::PrimitiveTopology::eTriangleFan;
+                        return vk::PrimitiveTopology::eTriangleStrip;
                     case PipelineInputType::Point:
                         return vk::PrimitiveTopology::ePointList;
                     case PipelineInputType::Line:
@@ -190,7 +190,7 @@ namespace Mango::Driver::Vulkan {
             std::vector<vk::DescriptorSetLayoutBinding> bindings;
             bindings.reserve(descriptors.size());
 
-            for (auto descriptor : descriptors)
+            for (auto descriptor: descriptors)
             {
                 vk::DescriptorSetLayoutBinding binding;
                 binding.binding = descriptor.Binding;
@@ -204,10 +204,10 @@ namespace Mango::Driver::Vulkan {
             vk::DescriptorSetLayoutCreateInfo setInfo;
             setInfo.bindingCount = static_cast<U32>(bindings.size());
             setInfo.pBindings = bindings.data();
-            
+
             vk::ResultValue<vk::DescriptorSetLayout> setRes = d.createDescriptorSetLayout(setInfo);
             ASSERT(setRes.result == vk::Result::eSuccess, "Failed to create descriptor set layout");
-            
+
             m_DescriptorSetLayouts[Set] = setRes.value;
         }
     }
@@ -229,10 +229,12 @@ namespace Mango::Driver::Vulkan {
     void VkPipeline::CreatePipeline(const PipelineInfo& info, const File& vertShader, const File& fragShader)
     {
         vk::SurfaceFormatKHR surfaceFormat = m_Renderer->GetSurfaceFormat();
+        vk::Format depthFormat = m_Renderer->GetDepthFormat();
 
         vk::PipelineRenderingCreateInfo renderingInfo;
         renderingInfo.colorAttachmentCount = 1;
         renderingInfo.pColorAttachmentFormats = &surfaceFormat.format;
+        renderingInfo.depthAttachmentFormat = depthFormat;
 
         vk::GraphicsPipelineCreateInfo pipelineInfo;
         pipelineInfo.pNext = &renderingInfo;
@@ -301,6 +303,13 @@ namespace Mango::Driver::Vulkan {
         dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
         dynamicState.pDynamicStates = dynamicStates.data();
 
+        vk::PipelineDepthStencilStateCreateInfo depthStencil;
+        depthStencil.depthTestEnable = info.DepthCompare != PipelineDepthCompare::Disabled;
+        depthStencil.depthWriteEnable = info.DepthWrite ? vk::True : vk::False;
+        depthStencil.depthCompareOp = info.DepthCompare == PipelineDepthCompare::Less ? vk::CompareOp::eLess : vk::CompareOp::eGreater;
+        depthStencil.depthBoundsTestEnable = vk::False;
+        depthStencil.stencilTestEnable = vk::False;
+
         pipelineInfo.pVertexInputState = &vertexInput;
         pipelineInfo.pInputAssemblyState = &inputAssembly;
         pipelineInfo.pViewportState = &viewportState;
@@ -308,6 +317,7 @@ namespace Mango::Driver::Vulkan {
         pipelineInfo.pMultisampleState = &multiSampleState;
         pipelineInfo.pColorBlendState = &colorBlendState;
         pipelineInfo.pDynamicState = &dynamicState;
+        pipelineInfo.pDepthStencilState = &depthStencil;
 
         pipelineInfo.layout = m_Layout;
 

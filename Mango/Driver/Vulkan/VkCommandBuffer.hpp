@@ -19,7 +19,7 @@ namespace Mango::Driver::Vulkan {
         void Begin() const;
         void End() const;
 
-        void BeginRendering(vk::ImageView imageView, vk::Extent2D extent) const;
+        void BeginRendering(vk::ImageView imageView, vk::ImageView depthImageView, vk::Extent2D extent) const;
         void EndRendering() const;
 
         vk::CommandBuffer Raw() const { return m_Buffer; }

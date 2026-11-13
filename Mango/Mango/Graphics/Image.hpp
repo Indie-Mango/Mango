@@ -7,13 +7,15 @@ namespace Mango {
 
     enum class ImageType : U8
     {
-        Color
+        Color,
+        Depth
     };
 
     enum class ImageUsage : U8
     {
         ColorAttachment,
-        Texture
+        DepthAttachment,
+        Texture,
     };
 
     enum class ImageFormat : U8
@@ -25,7 +27,8 @@ namespace Mango {
         BGRA8Unorm,
         BGRA8Srgb,
         RGBA16Float,
-        RGBA32Float
+        RGBA32Float,
+        Depth32,
     };
 
     constexpr U32 ImageFormatBytesPerPixel(ImageFormat format)
@@ -44,6 +47,7 @@ namespace Mango {
             case ImageFormat::RGBA16Float:
                 return 8;
             case ImageFormat::RGBA32Float:
+            case ImageFormat::Depth32:
                 return 16;
         }
 

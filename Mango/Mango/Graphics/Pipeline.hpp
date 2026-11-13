@@ -48,7 +48,14 @@ namespace Mango {
         Fragment = BIT(1),
         All = Vertex | Fragment
     };
-
+    
+    enum class PipelineDepthCompare : U8
+    {
+        Disabled = 0,
+        Less,
+        Greater
+    };
+    
     struct PipelineDescriptor
     {
         U32 Binding;
@@ -77,6 +84,8 @@ namespace Mango {
         PipelinePolygonMode PolygonMode = PipelinePolygonMode::Fill;
         PipelineCullMode CullMode = PipelineCullMode::None;
         PipelineFace FrontFace = PipelineFace::CounterClockWise;
+        PipelineDepthCompare DepthCompare = PipelineDepthCompare::Less;
+        bool DepthWrite = true;
     };
 
     class Pipeline

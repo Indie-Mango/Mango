@@ -46,8 +46,8 @@ namespace Mango::Driver::Vulkan {
         vk::ImageView m_View{};
         vk::Sampler m_Sampler{};
 
-        ImageUsage m_MangoUsage;
-        vk::ImageUsageFlags m_Usage{};
+        ImageUsage m_Usage;
+        vk::ImageUsageFlags m_VkUsage{};
         vk::Format m_VkFormat = vk::Format::eUndefined;
         vk::ImageAspectFlags m_Aspect{};
     };

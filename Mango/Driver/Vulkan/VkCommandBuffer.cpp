@@ -50,7 +50,7 @@ namespace Mango::Driver::Vulkan {
         ASSERT(endRes == vk::Result::eSuccess, "Failed to end command buffer");
     }
 
-    void VkCommandBuffer::BeginRendering(vk::ImageView imageView, vk::Extent2D extent) const
+    void VkCommandBuffer::BeginRendering(vk::ImageView imageView, vk::ImageView depthImageView, vk::Extent2D extent) const
     {
         vk::RenderingAttachmentInfo renderingAttachment;
         renderingAttachment.imageView = imageView;
@@ -59,11 +59,19 @@ namespace Mango::Driver::Vulkan {
         renderingAttachment.storeOp = vk::AttachmentStoreOp::eStore;
         renderingAttachment.clearValue = vk::ClearValue{vk::ClearColorValue{0.8f, 0.0f, 0.8f, 1.0f}};
 
+        vk::RenderingAttachmentInfo depthAttachment;
+        depthAttachment.imageView = depthImageView;
+        depthAttachment.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+        depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+        depthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
+        depthAttachment.clearValue = vk::ClearDepthStencilValue{1.0f, 0};
+
         vk::RenderingInfo renderingInfo;
         renderingInfo.renderArea = vk::Rect2D{vk::Offset2D{0, 0}, extent};
         renderingInfo.layerCount = 1;
         renderingInfo.colorAttachmentCount = 1;
         renderingInfo.pColorAttachments = &renderingAttachment;
+        renderingInfo.pDepthAttachment = &depthAttachment;
 
         m_Buffer.beginRendering(renderingInfo);
     }

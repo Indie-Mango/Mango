@@ -23,7 +23,6 @@ namespace Mango::Driver::Vulkan {
         m_ShaderCompiler = Unique<VkShaderCompiler>::Create(this, FileSystem::GetCacheDirectory() / "Pipeline.cache",
                                                             FileSystem::GetCacheDirectory() / "Shaders");
 
-        // Gets copied to the swapchain, so it has to match the surface format exactly
         m_TargetImage =
                 Image::Create(this, window->GetWidth(), window->GetHeight(), VkUtils::VkFormatToImageFormat(surfaceFormat.format),
                               ImageType::Color, ImageUsage::ColorAttachment, nullptr);
@@ -59,7 +58,15 @@ namespace Mango::Driver::Vulkan {
                                         vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::AccessFlagBits2::eNone,
                                         vk::AccessFlagBits2::eColorAttachmentWrite);
 
-        m_GraphicsCommandBuffer.BeginRendering(vkTargetImage->GetView(), {m_TargetImage->GetWidth(), m_TargetImage->GetHeight()});
+        auto* vkDepthImage = reinterpret_cast<VkImage*>(m_DepthImage.Raw());
+        vkDepthImage->TransitionLayout(
+                m_GraphicsCommandBuffer.Raw(), vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal,
+                vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
+                vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
+                vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::AccessFlagBits2::eDepthStencilAttachmentRead);
+
+        m_GraphicsCommandBuffer.BeginRendering(vkTargetImage->GetView(), vkDepthImage->GetView(),
+                                               {m_TargetImage->GetWidth(), m_TargetImage->GetHeight()});
         m_Rendering = true;
 
         vk::Viewport viewport;
@@ -206,6 +213,7 @@ namespace Mango::Driver::Vulkan {
         WaitIdle();
 
         m_Swapchain->Recreate(m_VkbDevice, window->GetWidth(), window->GetHeight());
+        m_DepthImage->Resize(window->GetWidth(), window->GetHeight());
         m_TargetImage->Resize(window->GetWidth(), window->GetHeight());
     }
 
@@ -238,6 +246,8 @@ namespace Mango::Driver::Vulkan {
         return m_TransferCommandBuffer.Raw();
     }
 
+    vk::Format VkRenderer::GetDepthFormat() const { return reinterpret_cast<VkImage*>(m_DepthImage.Raw())->GetVkFormat(); }
+
     void VkRenderer::InitVulkan(GLFWwindow* window)
     {
         vkb::InstanceBuilder builder;
@@ -247,6 +257,30 @@ namespace Mango::Driver::Vulkan {
                         .request_validation_layers()
                         .set_debug_callback([](VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT,
                                                const VkDebugUtilsMessengerCallbackDataEXT* data, void*) -> VkBool32 {
+                            // Filter out unwanted messages
+
+                            if (strcmp(data->pMessage,
+                                       "Removing layer VK_LAYER_EOS_Overlay (C:\\Program Files (x86)\\Epic "
+                                       "Games\\Launcher\\Portal\\Extras\\Overlay\\EOSOverlayVkLayer-Win64.json) because "
+                                       "it is a duplicate of "
+                                       "VK_LAYER_EOS_Overlay (C:\\Program Files (x86)\\Epic "
+                                       "Games\\Launcher\\Portal\\Extras\\Overlay\\EOSOverlayVkLayer-Win32.json)") == 0)
+                            {
+                                return vk::False;
+                            }
+
+                            if (strcmp(data->pMessage, "Layer VK_LAYER_OBS_HOOK uses API version 1.3 which is older than the "
+                                                       "application specified API version of 1.4. May cause issues.") == 0)
+                            {
+                                return vk::False;
+                            }
+
+                            if (strcmp(data->pMessage, "Layer VK_LAYER_RTSS uses API version 1.3 which is older than the application "
+                                                       "specified API version of 1.4. May cause issues.") == 0)
+                            {
+                                return vk::False;
+                            }
+
                             switch (severity)
                             {
                                 case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
@@ -374,6 +408,11 @@ namespace Mango::Driver::Vulkan {
         vk::ResultValue<vk::DescriptorPool> poolRes = m_Device.createDescriptorPool(poolInfo);
         ASSERT(poolRes.result == vk::Result::eSuccess, "Failed to create descriptor pool");
         m_DescriptorPool = poolRes.value;
+
+        int width, height;
+        glfwGetWindowSize(window, &width, &height);
+        m_DepthImage =
+                Image::Create(this, width, height, ImageFormat::Depth32, ImageType::Depth, ImageUsage::DepthAttachment, nullptr);
     }
 
     void VkRenderer::ShutdownVulkan()
@@ -385,6 +424,8 @@ namespace Mango::Driver::Vulkan {
         m_Device.destroyDescriptorPool(m_DescriptorPool);
 
         m_ShaderCompiler.Reset();
+
+        m_DepthImage.Reset();
 
         m_Swapchain.Reset();
 

@@ -13,6 +13,8 @@ namespace Mango::Driver::Vulkan {
                 {
                     case ImageType::Color:
                         return vk::ImageAspectFlagBits::eColor;
+                    case ImageType::Depth:
+                        return vk::ImageAspectFlagBits::eDepth;
                 }
 
                 Logger::Error("Invalid image type");
@@ -25,6 +27,8 @@ namespace Mango::Driver::Vulkan {
                 {
                     case ImageUsage::ColorAttachment:
                         return vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment;
+                    case ImageUsage::DepthAttachment:
+                        return vk::ImageUsageFlagBits::eDepthStencilAttachment;
                     case ImageUsage::Texture:
                         return vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
                 }
@@ -32,14 +36,13 @@ namespace Mango::Driver::Vulkan {
                 Logger::Error("Invalid image usage");
                 MANGO_EXIT_PROGRAM();
             }
-
         } // namespace Utils
     } // namespace
 
     VkImage::VkImage(VkRenderer* renderer, U32 width, U32 height, ImageFormat format, ImageType type, ImageUsage usage,
                      const void* data) :
-        Image(width, height, format), m_Renderer(renderer), m_MangoUsage(usage),
-        m_Usage(Utils::MangoImageUsageToVulkanImageUsage(usage)), m_VkFormat(VkUtils::ImageFormatToVk(format)),
+        Image(width, height, format), m_Renderer(renderer), m_Usage(usage),
+        m_VkUsage(Utils::MangoImageUsageToVulkanImageUsage(usage)), m_VkFormat(VkUtils::ImageFormatToVk(format)),
         m_Aspect(Utils::MangoImageTypeToVulkanImageAspect(type))
     {
         ASSERT(IsFormatSupported(), "Image format {} is not supported for this usage on this device", vk::to_string(m_VkFormat));
@@ -82,7 +85,7 @@ namespace Mango::Driver::Vulkan {
 
     void VkImage::SetData(const void* data)
     {
-        ASSERT(m_Usage & vk::ImageUsageFlagBits::eTransferDst, "Image was not created with an usage that allows uploading data");
+        ASSERT(m_VkUsage & vk::ImageUsageFlagBits::eTransferDst, "Image was not created with an usage that allows uploading data");
 
         vk::PhysicalDevice pd = m_Renderer->GetPhysicalDevice();
         vk::Device d = m_Renderer->GetDevice();
@@ -126,7 +129,6 @@ namespace Mango::Driver::Vulkan {
         vk::Result beginRes = transferCommandBuffer.begin(beginInfo);
         ASSERT(beginRes == vk::Result::eSuccess, "Failed to begin transfer command buffer recording");
 
-        // Previous contents are discarded
         TransitionLayout(transferCommandBuffer, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
                          vk::PipelineStageFlagBits2::eNone, vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eNone,
                          vk::AccessFlagBits2::eTransferWrite);
@@ -139,8 +141,6 @@ namespace Mango::Driver::Vulkan {
         region.imageExtent = vk::Extent3D{m_Width, m_Height, 1};
         transferCommandBuffer.copyBufferToImage(stagingBuffer, m_Image, vk::ImageLayout::eTransferDstOptimal, region);
 
-        // The transfer queue does not support shader stages, so dstStage stays eNone here.
-        // Visibility for the graphics queue is guaranteed by waiting on the transfer fence below.
         TransitionLayout(transferCommandBuffer, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
                          vk::PipelineStageFlagBits2::eCopy, vk::PipelineStageFlagBits2::eNone, vk::AccessFlagBits2::eTransferWrite,
                          vk::AccessFlagBits2::eNone);
@@ -168,19 +168,16 @@ namespace Mango::Driver::Vulkan {
         imageInfo.arrayLayers = 1;
         imageInfo.samples = vk::SampleCountFlagBits::e1;
         imageInfo.tiling = vk::ImageTiling::eOptimal;
-        imageInfo.usage = m_Usage;
+        imageInfo.usage = m_VkUsage;
         imageInfo.initialLayout = vk::ImageLayout::eUndefined;
 
-        // Textures are written on the (dedicated) transfer queue and read on the graphics queue.
-        // Concurrent sharing avoids having to do queue family ownership transfers.
         std::array queueFamilies = {m_Renderer->GetGraphicsQueueFamilyIdx(), m_Renderer->GetTransferQueueFamilyIdx()};
-        if (m_MangoUsage == ImageUsage::Texture && queueFamilies[0] != queueFamilies[1])
+        if (m_Usage == ImageUsage::Texture && queueFamilies[0] != queueFamilies[1])
         {
             imageInfo.sharingMode = vk::SharingMode::eConcurrent;
             imageInfo.queueFamilyIndexCount = static_cast<U32>(queueFamilies.size());
             imageInfo.pQueueFamilyIndices = queueFamilies.data();
-        }
-        else
+        } else
         {
             imageInfo.sharingMode = vk::SharingMode::eExclusive;
         }
@@ -250,23 +247,20 @@ namespace Mango::Driver::Vulkan {
         m_Sampler = sampler.value;
     }
 
-    USize VkImage::GetDataSize() const
-    {
-        return static_cast<USize>(m_Width) * m_Height * ImageFormatBytesPerPixel(m_Format);
-    }
+    USize VkImage::GetDataSize() const { return static_cast<USize>(m_Width) * m_Height * ImageFormatBytesPerPixel(m_Format); }
 
     bool VkImage::IsFormatSupported() const
     {
         vk::FormatProperties properties = m_Renderer->GetPhysicalDevice().getFormatProperties(m_VkFormat);
         vk::FormatFeatureFlags features = properties.optimalTilingFeatures;
 
-        if ((m_Usage & vk::ImageUsageFlagBits::eSampled) && !(features & vk::FormatFeatureFlagBits::eSampledImage))
+        if ((m_VkUsage & vk::ImageUsageFlagBits::eSampled) && !(features & vk::FormatFeatureFlagBits::eSampledImage))
             return false;
-        if ((m_Usage & vk::ImageUsageFlagBits::eColorAttachment) && !(features & vk::FormatFeatureFlagBits::eColorAttachment))
+        if ((m_VkUsage & vk::ImageUsageFlagBits::eColorAttachment) && !(features & vk::FormatFeatureFlagBits::eColorAttachment))
             return false;
-        if ((m_Usage & vk::ImageUsageFlagBits::eTransferDst) && !(features & vk::FormatFeatureFlagBits::eTransferDst))
+        if ((m_VkUsage & vk::ImageUsageFlagBits::eTransferDst) && !(features & vk::FormatFeatureFlagBits::eTransferDst))
             return false;
-        if ((m_Usage & vk::ImageUsageFlagBits::eTransferSrc) && !(features & vk::FormatFeatureFlagBits::eTransferSrc))
+        if ((m_VkUsage & vk::ImageUsageFlagBits::eTransferSrc) && !(features & vk::FormatFeatureFlagBits::eTransferSrc))
             return false;
 
         return true;

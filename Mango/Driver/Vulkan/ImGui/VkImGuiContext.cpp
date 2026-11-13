@@ -63,6 +63,10 @@ namespace Mango::Driver::Vulkan {
 
         vkInitInfo.PipelineInfoMain.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
         vkInitInfo.PipelineInfoMain.PipelineRenderingCreateInfo.pColorAttachmentFormats = &colorFormat;
+
+        vkInitInfo.PipelineInfoMain.PipelineRenderingCreateInfo.depthAttachmentFormat =
+                static_cast<VkFormat>(renderer->GetDepthFormat());
+
         ImGui_ImplVulkan_Init(&vkInitInfo);
     }
 
