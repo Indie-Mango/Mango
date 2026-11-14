@@ -72,10 +72,46 @@ namespace Mango::Driver::Vulkan {
         source.resize(shader.GetSize());
         shader.Read(source.data(), shader.GetSize());
 
-        if (source.size() >= 3 && static_cast<uint8_t>(source[0]) == 0xEF && static_cast<uint8_t>(source[1]) == 0xBB &&
-            static_cast<uint8_t>(source[2]) == 0xBF) // UTF-8 bomb
+        if (source.size() >= 3 && static_cast<U8>(source[0]) == 0xEF && static_cast<U8>(source[1]) == 0xBB &&
+            static_cast<U8>(source[2]) == 0xBF) // UTF-8 BOM
         {
             source.erase(0, 3);
+        }
+
+        Path cacheFilePath = FileSystem::GetCacheDirectory() / "Shaders" / shader.GetPath();
+
+        if (!FileSystem::Exists(FileSystem::GetParentPath(cacheFilePath)))
+        {
+            FileSystem::CreateDirectories(FileSystem::GetParentPath(cacheFilePath));
+        }
+
+        if (!FileSystem::Exists(cacheFilePath))
+        {
+            FileSystem::CreateFile(cacheFilePath);
+        }
+
+        File cacheFile{cacheFilePath, FileMode::ReadWrite};
+        std::string cacheData;
+        cacheData.resize(cacheFile.GetSize());
+        cacheFile.Read(cacheData.data(), cacheFile.GetSize());
+
+        if (cacheData.size() >= 3 && static_cast<U8>(cacheData[0]) == 0xEF && static_cast<U8>(cacheData[1]) == 0xBB &&
+            static_cast<U8>(cacheData[2]) == 0xBF) // UTF-8 BOM
+        {
+            cacheData.erase(0, 3);
+        }
+
+        Path compiledShaderPath =
+                (FileSystem::GetCacheDirectory() / "Shaders" / FileSystem::GetFileName(shader.GetPath())).string() + ".spv";
+
+        if (source == cacheData && FileSystem::Exists(compiledShaderPath))
+        {
+            File compiledShaderFile{compiledShaderPath, FileMode::Read};
+            std::vector<U32> compiledSource;
+            compiledSource.resize(compiledShaderFile.GetSize() / sizeof(U32));
+            compiledShaderFile.Read(compiledSource.data(), compiledShaderFile.GetSize());
+
+            return compiledSource;
         }
 
         shaderc::Compiler compiler;
@@ -92,9 +128,17 @@ namespace Mango::Driver::Vulkan {
             ASSERT(result.GetCompilationStatus() == shaderc_compilation_status_success, "Failed to compile shader");
         }
 
-        // TODO: Write file into output dir
+        std::vector<U32> buffer{result.begin(), result.end()};
 
-        return {result.begin(), result.end()};
+        if (!FileSystem::Exists(compiledShaderPath))
+        {
+            FileSystem::CreateFile(compiledShaderPath);
+        }
+
+        File compiledShaderFile{compiledShaderPath, FileMode::Write};
+        compiledShaderFile.Write(buffer.data(), buffer.size() * sizeof(U32));
+
+        return buffer;
     }
 
     vk::ShaderModule VkShaderCompiler::CreateModule(const std::vector<U32>& spv) const

@@ -89,6 +89,7 @@ namespace {
             m_MVP.Proj = glm::perspectiveZO(
                     45.0f, static_cast<Mango::F32>(window->GetWidth()) / static_cast<Mango::F32>(window->GetHeight()), 0.01f, 1000.0f);
             m_MVP.View = glm::translate(glm::mat4{1.0f}, glm::vec3{0.0f, 0.0f, -10.0f});
+            m_MVP.View[1][1] *= -1;
 
             m_MVP.Model = glm::translate(glm::mat4{1.0f}, {0.0f, 0.0f, -5.0f});
             m_UniformBuffer2->Write(&m_MVP, sizeof(m_MVP));

@@ -11,7 +11,6 @@ namespace Mango::Driver::Vulkan {
     class VkPipeline : public Pipeline
     {
     public:
-        // TODO: Filesystem handle
         VkPipeline(VkRenderer* renderer, const PipelineInfo& info, const File& vertShader, const File& fragShader);
         ~VkPipeline() override;
 
