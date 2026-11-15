@@ -3,10 +3,13 @@
 #include "Driver/Vulkan/Pipeline/VkPipeline.hpp"
 
 #include "Driver/Vulkan/Graphics/VkImage.hpp"
+#include "Mango/Debug/Profile.hpp"
 
 namespace Mango::Driver::Vulkan {
     VkMaterial::VkMaterial(VkRenderer* renderer, PipelineHandle pipeline) : m_Renderer(renderer), m_Pipeline(pipeline)
     {
+        MANGO_PROFILE_SCOPE()
+        
         auto* rawPipeline = reinterpret_cast<VkPipeline*>(m_Renderer->GetPipelineManager().ToRaw(m_Pipeline));
         const std::vector<vk::DescriptorSetLayout>& layouts = rawPipeline->GetDescriptorSetLayouts();
         m_Sets = m_Renderer->AllocateDescriptorSet(layouts);
@@ -14,6 +17,8 @@ namespace Mango::Driver::Vulkan {
 
     void VkMaterial::Update()
     {
+        MANGO_PROFILE_SCOPE()
+        
         for (auto& buffer : m_Buffers)
         {
             vk::DescriptorBufferInfo bufferInfo;

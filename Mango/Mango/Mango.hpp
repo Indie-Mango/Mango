@@ -27,3 +27,5 @@
 #include "Mango/Memory/Arena.hpp"
 
 #include "Mango/Common/CommonTypes.hpp"
+
+#include "Mango/Debug/Profile.hpp"

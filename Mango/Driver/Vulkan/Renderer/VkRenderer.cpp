@@ -7,6 +7,7 @@
 #include "Driver/Vulkan/VkUtils.hpp"
 #include "Mango/Core/Core.hpp"
 #include "Mango/Core/Logger.hpp"
+#include "Mango/Debug/Profile.hpp"
 #include "Mango/Graphics/Image.hpp"
 
 #include <GLFW/glfw3.h>
@@ -14,6 +15,8 @@
 namespace Mango::Driver::Vulkan {
     VkRenderer::VkRenderer(const Window* window, EventBus& eventBus) : Renderer(eventBus)
     {
+        MANGO_PROFILE_SCOPE()
+
         InitVulkan(window->GetNativeWindow());
 
         auto available = m_PhysicalDevice.getSurfaceFormatsKHR(m_Surface).value;
@@ -30,6 +33,8 @@ namespace Mango::Driver::Vulkan {
 
     VkRenderer::~VkRenderer()
     {
+        MANGO_PROFILE_SCOPE()
+
         vk::Result waitRes = m_Device.waitIdle();
         ASSERT(waitRes == vk::Result::eSuccess, "Failed to wait for device idle");
 
@@ -40,6 +45,8 @@ namespace Mango::Driver::Vulkan {
 
     bool VkRenderer::BeginFrame()
     {
+        MANGO_PROFILE_SCOPE()
+
         vk::Result fenceRes = m_Device.waitForFences(m_RenderFence, vk::True, std::numeric_limits<U64>::max());
         ASSERT(fenceRes == vk::Result::eSuccess, "Failed to wait for fence");
 
@@ -86,6 +93,8 @@ namespace Mango::Driver::Vulkan {
 
     void VkRenderer::EndFrame()
     {
+        MANGO_PROFILE_SCOPE()
+
         m_Rendering = false;
         m_GraphicsCommandBuffer.EndRendering();
 
@@ -195,6 +204,8 @@ namespace Mango::Driver::Vulkan {
 
     std::vector<vk::DescriptorSet> VkRenderer::AllocateDescriptorSet(const std::vector<vk::DescriptorSetLayout>& layouts) const
     {
+        MANGO_PROFILE_SCOPE()
+
         vk::DescriptorSetAllocateInfo info{};
         info.descriptorPool = m_DescriptorPool;
         info.descriptorSetCount = static_cast<U32>(layouts.size());
@@ -207,6 +218,8 @@ namespace Mango::Driver::Vulkan {
 
     void VkRenderer::OnWindowResizeVk(const Window* window)
     {
+        MANGO_PROFILE_SCOPE()
+
         if (window->GetWidth() == 0 || window->GetHeight() == 0)
             return;
 
@@ -219,6 +232,8 @@ namespace Mango::Driver::Vulkan {
 
     void VkRenderer::SubmitTransfer() const
     {
+        MANGO_PROFILE_SCOPE()
+
         vk::CommandBuffer transferCommandBuffer = m_TransferCommandBuffer.Raw();
 
         vk::SubmitInfo submission;
@@ -250,6 +265,8 @@ namespace Mango::Driver::Vulkan {
 
     void VkRenderer::InitVulkan(GLFWwindow* window)
     {
+        MANGO_PROFILE_SCOPE()
+
         vkb::InstanceBuilder builder;
         auto instanceRes =
                 builder.set_app_name("Mango")
@@ -417,6 +434,8 @@ namespace Mango::Driver::Vulkan {
 
     void VkRenderer::ShutdownVulkan()
     {
+        MANGO_PROFILE_SCOPE()
+
         m_GraphicsQueueFamilyIdx = ~0;
         m_PresentQueueFamilyIdx = ~0;
         m_TransferQueueFamilyIdx = ~0;

@@ -4,6 +4,7 @@
 #include "Driver/Vulkan/Renderer/VkRenderer.hpp"
 #include "Mango/Core/Core.hpp"
 #include "Mango/Core/Filesystem.hpp"
+#include "Mango/Debug/Profile.hpp"
 
 namespace Mango::Driver::Vulkan {
     namespace {
@@ -157,6 +158,8 @@ namespace Mango::Driver::Vulkan {
     VkPipeline::VkPipeline(VkRenderer* renderer, const PipelineInfo& info, const File& vertShader, const File& fragShader) :
         m_Renderer(renderer)
     {
+        MANGO_PROFILE_SCOPE()
+        
         CreateDescriptorSets(info.PipelineLayout);
         CreatePipelineLayout();
         CreatePipeline(info, vertShader, fragShader);
@@ -164,6 +167,8 @@ namespace Mango::Driver::Vulkan {
 
     VkPipeline::~VkPipeline()
     {
+        MANGO_PROFILE_SCOPE()
+        
         vk::Device d = m_Renderer->GetDevice();
 
         d.destroyPipeline(m_Pipeline);
@@ -175,6 +180,8 @@ namespace Mango::Driver::Vulkan {
 
     void VkPipeline::CreateDescriptorSets(const PipelineLayout& layout)
     {
+        MANGO_PROFILE_SCOPE()
+        
         vk::Device d = m_Renderer->GetDevice();
 
         U32 maxSet = 0;
@@ -214,6 +221,8 @@ namespace Mango::Driver::Vulkan {
 
     void VkPipeline::CreatePipelineLayout()
     {
+        MANGO_PROFILE_SCOPE()
+        
         vk::Device d = m_Renderer->GetDevice();
 
         vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
@@ -228,6 +237,8 @@ namespace Mango::Driver::Vulkan {
 
     void VkPipeline::CreatePipeline(const PipelineInfo& info, const File& vertShader, const File& fragShader)
     {
+        MANGO_PROFILE_SCOPE()
+        
         vk::SurfaceFormatKHR surfaceFormat = m_Renderer->GetSurfaceFormat();
         vk::Format depthFormat = m_Renderer->GetDepthFormat();
 

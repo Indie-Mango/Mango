@@ -3,10 +3,13 @@
 #include "Driver/Vulkan/Renderer/VkRenderer.hpp"
 #include "Driver/Vulkan/VkUtils.hpp"
 #include "Mango/Core/Core.hpp"
+#include "Mango/Debug/Profile.hpp"
 
 namespace Mango::Driver::Vulkan {
     VkIndexBuffer::VkIndexBuffer(VkRenderer* renderer, const std::vector<U32>& indices) : IndexBuffer(indices), m_Renderer(renderer)
     {
+        MANGO_PROFILE_SCOPE()
+        
         vk::PhysicalDevice pd = renderer->GetPhysicalDevice();
         vk::Device d = renderer->GetDevice();
 
@@ -38,6 +41,8 @@ namespace Mango::Driver::Vulkan {
 
     VkIndexBuffer::~VkIndexBuffer()
     {
+        MANGO_PROFILE_SCOPE()
+        
         vk::Device d = m_Renderer->GetDevice();
 
         d.destroyBuffer(m_StagingBuffer);
@@ -49,6 +54,8 @@ namespace Mango::Driver::Vulkan {
 
     void VkIndexBuffer::SetData(const std::vector<U32>& data)
     {
+        MANGO_PROFILE_SCOPE()
+        
         vk::PhysicalDevice pd = m_Renderer->GetPhysicalDevice();
         vk::Device d = m_Renderer->GetDevice();
         vk::CommandBuffer transferCommandBuffer = m_Renderer->GetTransferCommandBufferRaw();

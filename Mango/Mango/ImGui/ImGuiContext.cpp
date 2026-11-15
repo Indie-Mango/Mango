@@ -3,11 +3,14 @@
 #include "Driver/Vulkan/ImGui/VkImGuiContext.hpp"
 #include "Mango/Core/Core.hpp"
 #include "Mango/Core/Logger.hpp"
+#include "Mango/Debug/Profile.hpp"
 #include "Mango/Renderer/Renderer.hpp"
 
 namespace Mango {
     ImGuiContext* ImGuiContext::Create(Window* window, Renderer* renderer)
     {
+        MANGO_PROFILE_SCOPE()
+        
         switch (Renderer::GetAPI())
         {
             case Renderer::API::Vulkan:

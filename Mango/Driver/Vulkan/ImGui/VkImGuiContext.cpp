@@ -2,6 +2,7 @@
 
 #include "Driver/Vulkan/Renderer/VkRenderer.hpp"
 #include "Mango/Base/Window.hpp"
+#include "Mango/Debug/Profile.hpp"
 
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
@@ -10,6 +11,8 @@
 namespace Mango::Driver::Vulkan {
     VkImGuiContext::VkImGuiContext(Window* window, VkRenderer* renderer) : m_Renderer(renderer)
     {
+        MANGO_PROFILE_SCOPE()
+        
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
 
@@ -72,6 +75,8 @@ namespace Mango::Driver::Vulkan {
 
     VkImGuiContext::~VkImGuiContext()
     {
+        MANGO_PROFILE_SCOPE()
+        
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
@@ -81,6 +86,8 @@ namespace Mango::Driver::Vulkan {
 
     void VkImGuiContext::BeginFrame()
     {
+        MANGO_PROFILE_SCOPE()
+        
         ImGui_ImplGlfw_NewFrame();
         ImGui_ImplVulkan_NewFrame();
         ImGui::NewFrame();
@@ -88,6 +95,8 @@ namespace Mango::Driver::Vulkan {
 
     void VkImGuiContext::EndFrame()
     {
+        MANGO_PROFILE_SCOPE()
+        
         ImGui::Render();
         ImDrawData* drawData = ImGui::GetDrawData();
         ImGui_ImplVulkan_RenderDrawData(drawData, m_Renderer->GetGraphicsCommandBufferRaw());

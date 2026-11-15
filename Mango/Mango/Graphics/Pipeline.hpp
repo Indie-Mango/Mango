@@ -2,8 +2,8 @@
 #include "Mango/Common/CommonTypes.hpp"
 #include "Mango/Core/Core.hpp"
 #include "Mango/Core/Filesystem.hpp"
-#include "Mango/Memory/Smart.hpp"
 #include "Mango/Graphics/VertexBuffer.hpp"
+#include "Mango/Memory/Smart.hpp"
 
 namespace Mango {
     enum class PipelineInputType : U8

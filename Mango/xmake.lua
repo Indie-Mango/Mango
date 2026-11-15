@@ -1,3 +1,5 @@
+add_requires("tracy")
+
 add_requires("vulkan-hpp")
 add_requires("vulkan-loader")
 add_requires("vk-bootstrap")
@@ -22,6 +24,7 @@ target("Mango-Driver")
     add_headerfiles("Driver/Vulkan/**.hpp", {install = false})
     add_includedirs(".", {public = true})
 
+    add_packages("tracy", {public = true})
     add_packages("vulkan-hpp", "vulkan-loader", "vk-bootstrap", "shaderc", {public = true})
     add_defines("VULKAN_HPP_NO_EXCEPTIONS", {public = true})
     add_defines("GLFW_INCLUDE_VULKAN", {public = true})
@@ -34,6 +37,8 @@ target("Mango-Driver")
         add_defines("MANGO_DEBUG")
     end
 
+    add_defines("MANGO_TRACY_ENABLED=1")
+
 target("Mango-Engine")
     set_kind("static")
     add_files("Mango/**.cpp")
@@ -43,5 +48,7 @@ target("Mango-Engine")
     if is_mode("debug") then
         add_defines("MANGO_DEBUG")
     end
+
+    add_defines("MANGO_TRACY_ENABLED=1")
 
     add_deps("Mango-Driver")

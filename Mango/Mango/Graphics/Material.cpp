@@ -1,11 +1,14 @@
 ﻿#include "Material.hpp"
 
 #include "Driver/Vulkan/Graphics/VkMaterial.hpp"
+#include "Mango/Debug/Profile.hpp"
 
 namespace Mango {
     // TODO: Different constructing system
     Shared<Material> Material::Create(Renderer* renderer, PipelineHandle pipeline)
     {
+        MANGO_PROFILE_SCOPE()
+        
         switch (Renderer::GetAPI())
         {
             case Renderer::API::Vulkan:

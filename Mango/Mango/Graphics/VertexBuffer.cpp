@@ -2,11 +2,14 @@
 
 #include "Driver/Vulkan/Graphics/VkVertexBuffer.hpp"
 #include "Mango/Core/Core.hpp"
+#include "Mango/Debug/Profile.hpp"
 #include "Mango/Renderer/Renderer.hpp"
 
 namespace Mango {
     Shared<VertexBuffer> VertexBuffer::Create(Renderer* renderer, const VertexBufferLayout& layout, U32 vertexCount, const void* data)
     {
+        MANGO_PROFILE_SCOPE()
+        
         switch (Renderer::GetAPI())
         {
             case Renderer::API::Vulkan:

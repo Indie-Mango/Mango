@@ -3,6 +3,7 @@
 #include "Driver/Vulkan/Renderer/VkRenderer.hpp"
 #include "Driver/Vulkan/VkUtils.hpp"
 #include "Mango/Core/Core.hpp"
+#include "Mango/Debug/Profile.hpp"
 
 namespace Mango::Driver::Vulkan {
     namespace {
@@ -44,6 +45,8 @@ namespace Mango::Driver::Vulkan {
         Image(width, height, format), m_Renderer(renderer), m_Usage(usage), m_VkUsage(Utils::MangoImageUsageToVulkanImageUsage(usage)),
         m_VkFormat(VkUtils::ImageFormatToVk(format)), m_Aspect(Utils::MangoImageTypeToVulkanImageAspect(type))
     {
+        MANGO_PROFILE_SCOPE()
+
         ASSERT(IsFormatSupported(), "Image format {} is not supported for this usage on this device", vk::to_string(m_VkFormat));
 
         CreateSampler();
@@ -55,12 +58,16 @@ namespace Mango::Driver::Vulkan {
 
     VkImage::~VkImage()
     {
+        MANGO_PROFILE_SCOPE()
+
         Free();
         m_Renderer->GetDevice().destroySampler(m_Sampler);
     }
 
     void VkImage::Resize(U32 width, U32 height)
     {
+        MANGO_PROFILE_SCOPE()
+
         if (width == 0 || height == 0)
             return;
 
@@ -70,7 +77,6 @@ namespace Mango::Driver::Vulkan {
         m_Width = width;
         m_Height = height;
 
-        // NOTE: Contents are lost, a texture has to be re-uploaded with SetData
         Free();
         Allocate();
     }
@@ -84,6 +90,8 @@ namespace Mango::Driver::Vulkan {
 
     void VkImage::SetData(const void* data)
     {
+        MANGO_PROFILE_SCOPE()
+
         ASSERT(m_VkUsage & vk::ImageUsageFlagBits::eTransferDst, "Image was not created with an usage that allows uploading data");
 
         vk::PhysicalDevice pd = m_Renderer->GetPhysicalDevice();
@@ -91,7 +99,6 @@ namespace Mango::Driver::Vulkan {
 
         const USize size = GetDataSize();
 
-        // Staging buffer only lives for the duration of the upload
         vk::BufferCreateInfo stagingBufferInfo;
         stagingBufferInfo.size = size;
         stagingBufferInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
@@ -156,6 +163,8 @@ namespace Mango::Driver::Vulkan {
 
     void VkImage::Allocate()
     {
+        MANGO_PROFILE_SCOPE()
+
         vk::PhysicalDevice pd = m_Renderer->GetPhysicalDevice();
         vk::Device d = m_Renderer->GetDevice();
 
@@ -225,9 +234,10 @@ namespace Mango::Driver::Vulkan {
         m_Memory = nullptr;
     }
 
-    // Independent of the image size, so it survives a Resize
     void VkImage::CreateSampler()
     {
+        MANGO_PROFILE_SCOPE()
+
         // TODO: Params
         vk::SamplerCreateInfo samplerInfo;
         samplerInfo.magFilter = vk::Filter::eLinear;
@@ -253,13 +263,13 @@ namespace Mango::Driver::Vulkan {
         vk::FormatProperties properties = m_Renderer->GetPhysicalDevice().getFormatProperties(m_VkFormat);
         vk::FormatFeatureFlags features = properties.optimalTilingFeatures;
 
-        if ((m_VkUsage & vk::ImageUsageFlagBits::eSampled) && !(features & vk::FormatFeatureFlagBits::eSampledImage))
+        if (m_VkUsage & vk::ImageUsageFlagBits::eSampled && !(features & vk::FormatFeatureFlagBits::eSampledImage))
             return false;
-        if ((m_VkUsage & vk::ImageUsageFlagBits::eColorAttachment) && !(features & vk::FormatFeatureFlagBits::eColorAttachment))
+        if (m_VkUsage & vk::ImageUsageFlagBits::eColorAttachment && !(features & vk::FormatFeatureFlagBits::eColorAttachment))
             return false;
-        if ((m_VkUsage & vk::ImageUsageFlagBits::eTransferDst) && !(features & vk::FormatFeatureFlagBits::eTransferDst))
+        if (m_VkUsage & vk::ImageUsageFlagBits::eTransferDst && !(features & vk::FormatFeatureFlagBits::eTransferDst))
             return false;
-        if ((m_VkUsage & vk::ImageUsageFlagBits::eTransferSrc) && !(features & vk::FormatFeatureFlagBits::eTransferSrc))
+        if (m_VkUsage & vk::ImageUsageFlagBits::eTransferSrc && !(features & vk::FormatFeatureFlagBits::eTransferSrc))
             return false;
 
         return true;

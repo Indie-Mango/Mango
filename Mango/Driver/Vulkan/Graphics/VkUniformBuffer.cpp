@@ -3,10 +3,13 @@
 #include "Driver/Vulkan/Renderer/VkRenderer.hpp"
 #include "Driver/Vulkan/VkUtils.hpp"
 #include "Mango/Core/Core.hpp"
+#include "Mango/Debug/Profile.hpp"
 
 namespace Mango::Driver::Vulkan {
     VkUniformBuffer::VkUniformBuffer(VkRenderer* renderer, USize size) : m_Renderer(renderer), m_Size(size)
     {
+        MANGO_PROFILE_SCOPE()
+        
         vk::PhysicalDevice pd = m_Renderer->GetPhysicalDevice();
         vk::Device d = m_Renderer->GetDevice();
 
@@ -36,6 +39,8 @@ namespace Mango::Driver::Vulkan {
 
     VkUniformBuffer::~VkUniformBuffer()
     {
+        MANGO_PROFILE_SCOPE()
+        
         vk::Device d = m_Renderer->GetDevice();
 
         d.destroyBuffer(m_Buffer);
@@ -44,6 +49,8 @@ namespace Mango::Driver::Vulkan {
 
     void VkUniformBuffer::Write(const void* data, USize size)
     {
+        MANGO_PROFILE_SCOPE()
+        
         ASSERT(size <= m_Size, "Given size must be smaller or equal to buffer size");
 
         vk::Device d = m_Renderer->GetDevice();

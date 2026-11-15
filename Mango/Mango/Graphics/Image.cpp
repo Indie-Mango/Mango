@@ -4,12 +4,15 @@
 #include "Driver/Vulkan/VkUtils.hpp"
 #include "Mango/Core/Core.hpp"
 #include "Mango/Core/Logger.hpp"
+#include "Mango/Debug/Profile.hpp"
 #include "Mango/Renderer/Renderer.hpp"
 
 namespace Mango {
     Shared<Image> Image::Create(Renderer* renderer, U32 width, U32 height, ImageFormat format, ImageType type, ImageUsage usage,
                                 const void* data)
     {
+        MANGO_PROFILE_SCOPE()
+        
         switch (Renderer::GetAPI())
         {
             case Renderer::API::Vulkan:

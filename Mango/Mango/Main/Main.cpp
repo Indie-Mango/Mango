@@ -1,5 +1,6 @@
 #include "Main.hpp"
 #include "Mango/Common/CommonTypes.hpp"
+#include "Mango/Debug/Profile.hpp"
 #include "Mango/Memory/Arena.hpp"
 
 namespace Mango {
@@ -16,9 +17,21 @@ namespace Mango {
         }
 
         Arena arena(1'000'000);
-        s_Engine = arena.Create<Engine>(std::move(args), arena, appCreateFn);
-        s_Engine->Run();
-        arena.Destroy(s_Engine);
+
+        {
+            MANGO_PROFILE_SCOPE_NAMED("Initialization")
+            s_Engine = arena.Create<Engine>(std::move(args), arena, appCreateFn);
+        }
+
+        {
+            MANGO_PROFILE_SCOPE_NAMED("Runtime")
+            s_Engine->Run();
+        }
+
+        {
+            MANGO_PROFILE_SCOPE_NAMED("Shutdown")
+            arena.Destroy(s_Engine);
+        }
 
         return EXIT_SUCCESS;
     }
