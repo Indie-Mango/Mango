@@ -1,10 +1,11 @@
 ﻿#pragma once
 #include "Mango/Common/CommonTypes.hpp"
 #include "Mango/Graphics/Texture.hpp"
-#include "Mango/Graphics/UniformBuffer.hpp"
 #include "Mango/Memory/Smart.hpp"
 
 namespace Mango {
+    class UniformBuffer;
+    
     class Material
     {
     public:
@@ -20,8 +21,8 @@ namespace Mango {
         virtual void Update() = 0;
         virtual void Bind() = 0;
 
-        Shared<UniformBuffer>& GetBuffer(U32 set, U32 binding);
-        void SetBuffer(U32 set, U32 binding, const Shared<UniformBuffer>& buffer);
+        Shared<UniformBuffer>& GetUniformBuffer(U32 set, U32 binding);
+        void SetUniformBuffer(U32 set, U32 binding, const Shared<UniformBuffer>& buffer);
 
         Texture& GetTexture(U32 set, U32 binding);
         void SetTexture(U32 set, U32 binding, const Texture& texture);

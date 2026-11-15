@@ -10,7 +10,7 @@ namespace Mango::Driver::Vulkan {
         VertexBuffer(layout, vertexCount), m_Renderer(renderer)
     {
         MANGO_PROFILE_SCOPE()
-        
+
         Allocate();
         if (data)
             VkVertexBuffer::SetData(data);
@@ -19,7 +19,7 @@ namespace Mango::Driver::Vulkan {
     VkVertexBuffer::~VkVertexBuffer()
     {
         MANGO_PROFILE_SCOPE()
-        
+
         vk::Device d = m_Renderer->GetDevice();
 
         d.destroyBuffer(m_StagingBuffer);
@@ -32,7 +32,7 @@ namespace Mango::Driver::Vulkan {
     void VkVertexBuffer::SetData(const void* data)
     {
         MANGO_PROFILE_SCOPE()
-        
+
         vk::PhysicalDevice pd = m_Renderer->GetPhysicalDevice();
         vk::Device d = m_Renderer->GetDevice();
         vk::CommandBuffer transferCommandBuffer = m_Renderer->GetTransferCommandBufferRaw();
@@ -89,7 +89,7 @@ namespace Mango::Driver::Vulkan {
     void VkVertexBuffer::Allocate()
     {
         MANGO_PROFILE_SCOPE()
-        
+
         vk::PhysicalDevice pd = m_Renderer->GetPhysicalDevice();
         vk::Device d = m_Renderer->GetDevice();
 

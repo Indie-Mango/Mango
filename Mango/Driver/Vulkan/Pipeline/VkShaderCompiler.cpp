@@ -15,7 +15,7 @@ namespace Mango::Driver::Vulkan {
         m_Renderer(renderer), m_PipelineCachePath(std::move(pipelineCache)), m_OutputDir(std::move(outputDir))
     {
         MANGO_PROFILE_SCOPE()
-        
+
         if (!FileSystem::Exists(m_PipelineCachePath))
         {
             FileSystem::CreateFile(m_PipelineCachePath);
@@ -40,7 +40,7 @@ namespace Mango::Driver::Vulkan {
     VkShaderCompiler::~VkShaderCompiler()
     {
         MANGO_PROFILE_SCOPE()
-        
+
         if (!m_PipelineCache)
             return;
 
@@ -61,7 +61,7 @@ namespace Mango::Driver::Vulkan {
     VkShaderModulePair VkShaderCompiler::CreateShaderModules(const File& vertShader, const File& fragShader) const
     {
         MANGO_PROFILE_SCOPE()
-        
+
         std::vector<U32> vertSpv = Compile(vertShader, shaderc_vertex_shader);
         ASSERT(!vertSpv.empty(), "Shader SPIR-V is empty");
         ASSERT(vertSpv[0] == 0x07230203, "Invalid SPIR-V");
@@ -76,7 +76,7 @@ namespace Mango::Driver::Vulkan {
     std::vector<U32> VkShaderCompiler::Compile(const File& shader, shaderc_shader_kind kind)
     {
         MANGO_PROFILE_SCOPE()
-        
+
         std::string source;
         source.resize(shader.GetSize());
         shader.Read(source.data(), shader.GetSize());

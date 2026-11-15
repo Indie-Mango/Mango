@@ -2,6 +2,7 @@
 #include "Mango/Base/Window.hpp"
 
 #include "Mango/Base/Event.hpp"
+#include "Mango/Graphics/MaterialManager.hpp"
 #include "Mango/Graphics/PipelineManager.hpp"
 #include "Mango/Memory/Smart.hpp"
 
@@ -43,6 +44,8 @@ namespace Mango {
         void OnWindowResize(const Window* window);
 
         PipelineManager& GetPipelineManager() { return m_PipelineManager; }
+        MaterialManager& GetMaterialManager() { return m_MaterialManager; }
+
         static API GetAPI() { return m_API; }
 
     protected:
@@ -52,6 +55,7 @@ namespace Mango {
         Shared<Image> m_TargetImage;
 
         PipelineManager m_PipelineManager;
+        MaterialManager m_MaterialManager;
 
     private:
         EventConnection<WindowResizedEvent> m_WindowResizedConnection;

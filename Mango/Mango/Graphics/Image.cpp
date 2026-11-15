@@ -12,7 +12,7 @@ namespace Mango {
                                 const void* data)
     {
         MANGO_PROFILE_SCOPE()
-        
+
         switch (Renderer::GetAPI())
         {
             case Renderer::API::Vulkan:

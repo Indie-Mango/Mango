@@ -10,7 +10,7 @@ namespace Mango {
     ImGuiContext* ImGuiContext::Create(Window* window, Renderer* renderer)
     {
         MANGO_PROFILE_SCOPE()
-        
+
         switch (Renderer::GetAPI())
         {
             case Renderer::API::Vulkan:

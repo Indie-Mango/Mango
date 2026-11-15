@@ -9,7 +9,7 @@ namespace Mango {
     Shared<UniformBuffer> UniformBuffer::Create(Renderer* renderer, USize size)
     {
         MANGO_PROFILE_SCOPE()
-        
+
         switch (Renderer::GetAPI())
         {
             case Renderer::API::Vulkan:

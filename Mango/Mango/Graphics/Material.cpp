@@ -2,13 +2,14 @@
 
 #include "Driver/Vulkan/Graphics/VkMaterial.hpp"
 #include "Mango/Debug/Profile.hpp"
+#include "Mango/Graphics/UniformBuffer.hpp"
 
 namespace Mango {
     // TODO: Different constructing system
     Shared<Material> Material::Create(Renderer* renderer, PipelineHandle pipeline)
     {
         MANGO_PROFILE_SCOPE()
-        
+
         switch (Renderer::GetAPI())
         {
             case Renderer::API::Vulkan:
@@ -19,7 +20,7 @@ namespace Mango {
         MANGO_EXIT_PROGRAM();
     }
 
-    Shared<UniformBuffer>& Material::GetBuffer(U32 set, U32 binding)
+    Shared<UniformBuffer>& Material::GetUniformBuffer(U32 set, U32 binding)
     {
         if (auto it = std::ranges::find_if(m_Buffers,
                                            [set, binding](const BufferBinding& bb) { return bb.Set == set && bb.Binding == binding; });
@@ -32,7 +33,7 @@ namespace Mango {
         MANGO_EXIT_PROGRAM();
     }
 
-    void Material::SetBuffer(U32 set, U32 binding, const Shared<UniformBuffer>& buffer)
+    void Material::SetUniformBuffer(U32 set, U32 binding, const Shared<UniformBuffer>& buffer)
     {
         if (auto it = std::ranges::find_if(m_Buffers,
                                            [set, binding](const BufferBinding& bb) { return bb.Set == set && bb.Binding == binding; });

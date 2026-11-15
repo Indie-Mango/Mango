@@ -3,8 +3,6 @@
 #include "Mango/Graphics/Pipeline.hpp"
 
 namespace Mango {
-    using PipelineHandle = U64;
-
     class PipelineManager
     {
     public:

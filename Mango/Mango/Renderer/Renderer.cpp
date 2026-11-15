@@ -8,7 +8,7 @@ namespace Mango {
     Renderer* Renderer::Create(const Window* window, EventBus& eventBus)
     {
         MANGO_PROFILE_SCOPE()
-        
+
         switch (m_API)
         {
             case API::Vulkan:

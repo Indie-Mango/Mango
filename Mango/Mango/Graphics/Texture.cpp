@@ -9,7 +9,7 @@ namespace Mango {
     Texture::Texture(Renderer* renderer, const Path& path)
     {
         MANGO_PROFILE_SCOPE()
-        
+
         int w, h, c;
         U8* pixels = stbi_load(path.string().c_str(), &w, &h, &c, STBI_rgb_alpha);
 

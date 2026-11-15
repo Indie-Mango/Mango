@@ -10,7 +10,7 @@ namespace Mango {
     Shared<IndexBuffer> IndexBuffer::Create(Renderer* renderer, const std::vector<U32>& indices)
     {
         MANGO_PROFILE_SCOPE()
-        
+
         switch (Renderer::GetAPI())
         {
             case Renderer::API::Vulkan:

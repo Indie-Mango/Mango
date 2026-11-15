@@ -10,7 +10,7 @@ namespace Mango {
                                       const File& fragShader)
     {
         MANGO_PROFILE_SCOPE()
-        
+
         switch (Renderer::GetAPI())
         {
             case Renderer::API::Vulkan:

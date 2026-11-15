@@ -9,7 +9,7 @@ namespace Mango {
     Shared<VertexBuffer> VertexBuffer::Create(Renderer* renderer, const VertexBufferLayout& layout, U32 vertexCount, const void* data)
     {
         MANGO_PROFILE_SCOPE()
-        
+
         switch (Renderer::GetAPI())
         {
             case Renderer::API::Vulkan:
