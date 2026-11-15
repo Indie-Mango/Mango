@@ -1,17 +1,20 @@
 ﻿#include "VkMaterial.hpp"
+#include "Driver/Vulkan/Graphics/VkUniformBuffer.hpp"
+#include "Driver/Vulkan/Pipeline/VkPipeline.hpp"
 
 #include "Driver/Vulkan/Graphics/VkImage.hpp"
 
 namespace Mango::Driver::Vulkan {
-    VkMaterial::VkMaterial(VkRenderer* renderer, VkPipeline* pipeline) : m_Renderer(renderer), m_Pipeline(pipeline)
+    VkMaterial::VkMaterial(VkRenderer* renderer, PipelineHandle pipeline) : m_Renderer(renderer), m_Pipeline(pipeline)
     {
-        const std::vector<vk::DescriptorSetLayout>& layouts = m_Pipeline->GetDescriptorSetLayouts();
+        auto* rawPipeline = reinterpret_cast<VkPipeline*>(m_Renderer->GetPipelineManager().ToRaw(m_Pipeline));
+        const std::vector<vk::DescriptorSetLayout>& layouts = rawPipeline->GetDescriptorSetLayouts();
         m_Sets = m_Renderer->AllocateDescriptorSet(layouts);
     }
 
     void VkMaterial::Update()
     {
-        for (auto& buffer: m_Buffers)
+        for (auto& buffer : m_Buffers)
         {
             vk::DescriptorBufferInfo bufferInfo;
             bufferInfo.buffer = reinterpret_cast<VkUniformBuffer*>(buffer.Buffer.Raw())->GetBuffer();
@@ -30,7 +33,7 @@ namespace Mango::Driver::Vulkan {
             m_Renderer->GetDevice().updateDescriptorSets(write, nullptr);
         }
 
-        for (auto& texture: m_Textures)
+        for (auto& texture : m_Textures)
         {
             auto* image = reinterpret_cast<VkImage*>(texture.Texture.GetImage().Raw());
 
@@ -53,7 +56,8 @@ namespace Mango::Driver::Vulkan {
 
     void VkMaterial::Bind()
     {
-        m_Renderer->GetGraphicsCommandBufferRaw().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_Pipeline->GetLayout(), 0,
+        auto* rawPipeline = reinterpret_cast<VkPipeline*>(m_Renderer->GetPipelineManager().ToRaw(m_Pipeline));
+        m_Renderer->GetGraphicsCommandBufferRaw().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, rawPipeline->GetLayout(), 0,
                                                                      m_Sets, {});
     }
 } // namespace Mango::Driver::Vulkan

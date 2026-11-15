@@ -2,6 +2,7 @@
 #include "Mango/Base/Window.hpp"
 
 #include "Mango/Base/Event.hpp"
+#include "Mango/Graphics/PipelineManager.hpp"
 #include "Mango/Memory/Smart.hpp"
 
 namespace Mango {
@@ -35,12 +36,13 @@ namespace Mango {
 
         virtual void SetVertexBuffer(const Shared<VertexBuffer>& vertexBuffer) = 0;
         virtual void SetIndexBuffer(const Shared<IndexBuffer>& indexBuffer) = 0;
-        virtual void SetPipeline(const Shared<Pipeline>& pipeline) = 0;
+        virtual void SetPipeline(PipelineHandle pipeline) = 0;
 
         virtual void WaitIdle() = 0;
 
         void OnWindowResize(const Window* window);
 
+        PipelineManager& GetPipelineManager() { return m_PipelineManager; }
         static API GetAPI() { return m_API; }
 
     protected:
@@ -48,6 +50,8 @@ namespace Mango {
 
     protected:
         Shared<Image> m_TargetImage;
+
+        PipelineManager m_PipelineManager;
 
     private:
         EventConnection<WindowResizedEvent> m_WindowResizedConnection;

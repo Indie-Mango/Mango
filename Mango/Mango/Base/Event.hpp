@@ -79,11 +79,11 @@ namespace Mango {
 
         void Update()
         {
-            for (auto events = std::exchange(m_Events, {}); auto& [type, event]: events)
+            for (auto events = std::exchange(m_Events, {}); auto& [type, event] : events)
             {
                 if (auto it = m_Callbacks.find(type); it != m_Callbacks.end())
                 {
-                    for (auto& callback: it->second | std::views::values)
+                    for (auto& callback : it->second | std::views::values)
                     {
                         if (callback(event) == EventState::Handled)
                             break;

@@ -169,7 +169,7 @@ namespace Mango::Driver::Vulkan {
         d.destroyPipeline(m_Pipeline);
         d.destroyPipelineLayout(m_Layout);
 
-        for (auto layout: m_DescriptorSetLayouts)
+        for (auto layout : m_DescriptorSetLayouts)
             d.destroyDescriptorSetLayout(layout);
     }
 
@@ -179,18 +179,18 @@ namespace Mango::Driver::Vulkan {
 
         U32 maxSet = 0;
 
-        for (const auto& entry: layout.DescriptorSets)
+        for (const auto& entry : layout.DescriptorSets)
             maxSet = std::max(maxSet, entry.Set);
 
         if (!layout.DescriptorSets.empty())
             m_DescriptorSetLayouts.resize(maxSet + 1);
 
-        for (const auto& [descriptors, Set, stage]: layout.DescriptorSets)
+        for (const auto& [descriptors, Set, stage] : layout.DescriptorSets)
         {
             std::vector<vk::DescriptorSetLayoutBinding> bindings;
             bindings.reserve(descriptors.size());
 
-            for (auto descriptor: descriptors)
+            for (auto descriptor : descriptors)
             {
                 vk::DescriptorSetLayoutBinding binding;
                 binding.binding = descriptor.Binding;

@@ -41,9 +41,8 @@ namespace Mango::Driver::Vulkan {
 
     VkImage::VkImage(VkRenderer* renderer, U32 width, U32 height, ImageFormat format, ImageType type, ImageUsage usage,
                      const void* data) :
-        Image(width, height, format), m_Renderer(renderer), m_Usage(usage),
-        m_VkUsage(Utils::MangoImageUsageToVulkanImageUsage(usage)), m_VkFormat(VkUtils::ImageFormatToVk(format)),
-        m_Aspect(Utils::MangoImageTypeToVulkanImageAspect(type))
+        Image(width, height, format), m_Renderer(renderer), m_Usage(usage), m_VkUsage(Utils::MangoImageUsageToVulkanImageUsage(usage)),
+        m_VkFormat(VkUtils::ImageFormatToVk(format)), m_Aspect(Utils::MangoImageTypeToVulkanImageAspect(type))
     {
         ASSERT(IsFormatSupported(), "Image format {} is not supported for this usage on this device", vk::to_string(m_VkFormat));
 

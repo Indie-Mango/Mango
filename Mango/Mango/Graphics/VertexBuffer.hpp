@@ -37,7 +37,7 @@ namespace Mango {
         VertexBufferLayout(const std::initializer_list<ShaderDataType>& elements) : Elements(elements)
         {
             Count = Elements.size();
-            for (auto element: Elements)
+            for (auto element : Elements)
                 Stride += ShaderDataTypeSize(element);
         }
 

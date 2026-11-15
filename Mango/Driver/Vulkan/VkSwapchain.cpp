@@ -76,7 +76,7 @@ namespace Mango::Driver::Vulkan {
 
     void VkSwapchain::GetImagesAndViews()
     {
-        for (auto imageView: m_ImageViews)
+        for (auto imageView : m_ImageViews)
             m_Device.destroyImageView(imageView);
 
         m_Images.clear();
@@ -93,7 +93,7 @@ namespace Mango::Driver::Vulkan {
         viewInfo.subresourceRange.layerCount = 1;
         viewInfo.subresourceRange.levelCount = 1;
 
-        for (auto image: m_Images)
+        for (auto image : m_Images)
         {
             viewInfo.image = image;
             vk::ResultValue<vk::ImageView> view = m_Device.createImageView(viewInfo);

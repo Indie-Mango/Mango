@@ -3,8 +3,7 @@
 #include "Mango/Core/Core.hpp"
 #include "Mango/Core/Filesystem.hpp"
 #include "Mango/Memory/Smart.hpp"
-#include "Mango/Renderer/Renderer.hpp"
-#include "VertexBuffer.hpp"
+#include "Mango/Graphics/VertexBuffer.hpp"
 
 namespace Mango {
     enum class PipelineInputType : U8
@@ -48,14 +47,14 @@ namespace Mango {
         Fragment = BIT(1),
         All = Vertex | Fragment
     };
-    
+
     enum class PipelineDepthCompare : U8
     {
         Disabled = 0,
         Less,
         Greater
     };
-    
+
     struct PipelineDescriptor
     {
         U32 Binding;

@@ -28,7 +28,7 @@ namespace Mango::Driver::Vulkan {
 
         void SetVertexBuffer(const Shared<VertexBuffer>& vertexBuffer) override;
         void SetIndexBuffer(const Shared<IndexBuffer>& indexBuffer) override;
-        void SetPipeline(const Shared<Pipeline>& pipeline) override;
+        void SetPipeline(PipelineHandle pipeline) override;
 
         void WaitIdle() override;
 

@@ -1,8 +1,7 @@
 ﻿#pragma once
-#include "Driver/Vulkan/Pipeline/VkPipeline.hpp"
 #include "Driver/Vulkan/Renderer/VkRenderer.hpp"
 #include "Mango/Graphics/Material.hpp"
-#include "VkUniformBuffer.hpp"
+#include "Mango/Graphics/PipelineManager.hpp"
 
 #include <vulkan/vulkan.hpp>
 
@@ -10,7 +9,7 @@ namespace Mango::Driver::Vulkan {
     class VkMaterial : public Material
     {
     public:
-        VkMaterial(VkRenderer* renderer, VkPipeline* pipeline);
+        VkMaterial(VkRenderer* renderer, PipelineHandle pipeline);
         ~VkMaterial() override = default;
 
         VkMaterial(const VkMaterial& other) = delete;
@@ -24,7 +23,7 @@ namespace Mango::Driver::Vulkan {
 
     private:
         VkRenderer* m_Renderer = nullptr;
-        VkPipeline* m_Pipeline = nullptr;
+        PipelineHandle m_Pipeline = 0;
 
         std::vector<vk::DescriptorSet> m_Sets;
     };

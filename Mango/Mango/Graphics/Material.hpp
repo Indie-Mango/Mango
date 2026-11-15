@@ -8,7 +8,7 @@ namespace Mango {
     class Material
     {
     public:
-        static Shared<Material> Create(Renderer* renderer, Pipeline* pipeline);
+        static Shared<Material> Create(Renderer* renderer, PipelineHandle pipeline);
         virtual ~Material() = default;
 
         Material(const Material&) = delete;
@@ -22,7 +22,7 @@ namespace Mango {
 
         Shared<UniformBuffer>& GetBuffer(U32 set, U32 binding);
         void SetBuffer(U32 set, U32 binding, const Shared<UniformBuffer>& buffer);
-        
+
         Texture& GetTexture(U32 set, U32 binding);
         void SetTexture(U32 set, U32 binding, const Texture& texture);
 

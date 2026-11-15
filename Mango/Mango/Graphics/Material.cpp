@@ -4,13 +4,12 @@
 
 namespace Mango {
     // TODO: Different constructing system
-    Shared<Material> Material::Create(Renderer* renderer, Pipeline* pipeline)
+    Shared<Material> Material::Create(Renderer* renderer, PipelineHandle pipeline)
     {
         switch (Renderer::GetAPI())
         {
             case Renderer::API::Vulkan:
-                return Shared<Driver::Vulkan::VkMaterial>::Create(reinterpret_cast<Driver::Vulkan::VkRenderer*>(renderer),
-                                                                  reinterpret_cast<Driver::Vulkan::VkPipeline*>(pipeline));
+                return Shared<Driver::Vulkan::VkMaterial>::Create(reinterpret_cast<Driver::Vulkan::VkRenderer*>(renderer), pipeline);
         }
 
         Logger::Error("Renderer uses invalid or unsupported API");
@@ -34,7 +33,7 @@ namespace Mango {
     {
         if (auto it = std::ranges::find_if(m_Buffers,
                                            [set, binding](const BufferBinding& bb) { return bb.Set == set && bb.Binding == binding; });
-            it != m_Buffers.begin())
+            it != m_Buffers.end())
         {
             it->Buffer = buffer;
             return;

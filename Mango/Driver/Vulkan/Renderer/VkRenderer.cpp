@@ -179,11 +179,11 @@ namespace Mango::Driver::Vulkan {
         m_GraphicsCommandBuffer.Raw().bindIndexBuffer(buffer, 0, vk::IndexType::eUint32);
     }
 
-    void VkRenderer::SetPipeline(const Shared<Pipeline>& pipeline)
+    void VkRenderer::SetPipeline(PipelineHandle pipeline)
     {
         ASSERT(m_Rendering, "To set the pipeline, the renderer must be rendering");
 
-        vk::Pipeline raw = reinterpret_cast<VkPipeline*>(pipeline.Raw())->GetPipeline();
+        vk::Pipeline raw = reinterpret_cast<VkPipeline*>(m_PipelineManager.ToRaw(pipeline))->GetPipeline();
         m_GraphicsCommandBuffer.Raw().bindPipeline(vk::PipelineBindPoint::eGraphics, raw);
     }
 

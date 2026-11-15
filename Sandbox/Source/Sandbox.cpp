@@ -21,6 +21,8 @@ namespace {
                         return Mango::EventState::Continue;
                     });
 
+            Mango::Renderer* renderer = engine->GetRenderer();
+
             Mango::VertexBufferLayout vertexBufferLayout = {
                     Mango::ShaderDataType::Float3, // position
                     Mango::ShaderDataType::Float2, // texCoord
@@ -68,17 +70,19 @@ namespace {
 
             pipelineInfo.PipelineLayout = layout;
 
+            Mango::PipelineManager& pipelineManager = renderer->GetPipelineManager();
+
             Mango::File vertShader{"Sandbox/Assets/Shaders/Basic.vert", Mango::FileMode::Read};
             Mango::File fragShader{"Sandbox/Assets/Shaders/Basic.frag", Mango::FileMode::Read};
-            m_pipeline = Mango::Pipeline::Create(engine->GetRenderer(), pipelineInfo, vertShader, fragShader);
-            m_Material = Mango::Material::Create(engine->GetRenderer(), m_pipeline.Raw());
+            m_pipeline = pipelineManager.CreatePipeline(engine->GetRenderer(), pipelineInfo, vertShader, fragShader);
+            m_Material = Mango::Material::Create(engine->GetRenderer(), m_pipeline);
             m_UniformBuffer = Mango::UniformBuffer::Create(engine->GetRenderer(), 3 * sizeof(glm::mat4));
             m_Material->SetBuffer(0, 0, m_UniformBuffer);
 
             m_Texture = Mango::Texture{engine->GetRenderer(), "Sandbox/Assets/Textures/Smiley.png"};
             m_Material->SetTexture(1, 0, m_Texture);
 
-            m_Material2 = Mango::Material::Create(engine->GetRenderer(), m_pipeline.Raw());
+            m_Material2 = Mango::Material::Create(engine->GetRenderer(), m_pipeline);
             m_UniformBuffer2 = Mango::UniformBuffer::Create(engine->GetRenderer(), 3 * sizeof(glm::mat4));
             m_Material2->SetBuffer(0, 0, m_UniformBuffer2);
 
@@ -94,6 +98,8 @@ namespace {
             m_MVP.Model = glm::translate(glm::mat4{1.0f}, {0.0f, 0.0f, -5.0f});
             m_UniformBuffer2->Write(&m_MVP, sizeof(m_MVP));
         }
+
+        ~Sandbox() override { m_Engine->GetRenderer()->GetPipelineManager().Release(m_pipeline); }
 
         void Update(Mango::F32 ts) override
         {
@@ -139,7 +145,7 @@ namespace {
 
         Mango::Shared<Mango::VertexBuffer> m_VertexBuffer;
         Mango::Shared<Mango::IndexBuffer> m_IndexBuffer;
-        Mango::Shared<Mango::Pipeline> m_pipeline;
+        Mango::PipelineHandle m_pipeline;
         Mango::Shared<Mango::Material> m_Material;
         Mango::Shared<Mango::Material> m_Material2;
         Mango::Shared<Mango::UniformBuffer> m_UniformBuffer;
