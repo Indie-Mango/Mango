@@ -1,13 +1,16 @@
 ﻿#pragma once
 #include "Image.hpp"
 #include "Mango/Core/Filesystem.hpp"
+#include "Mango/Resource/ResourceManager.hpp"
 
 namespace Mango {
+    class Engine;
+
     class Texture
     {
     public:
         Texture() = default;
-        Texture(Renderer* renderer, const Path& path);
+        Texture(Engine* engine, ResourceHandle picture);
         ~Texture() = default;
 
         Texture(const Texture& other) = default;

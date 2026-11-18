@@ -2,6 +2,7 @@
 #include "Mango/Base/Event.hpp"
 #include "Mango/Base/Window.hpp"
 #include "Mango/Memory/Arena.hpp"
+#include "Mango/Resource/ResourceManager.hpp"
 
 #include <string>
 #include <vector>
@@ -29,6 +30,7 @@ namespace Mango {
 
         Arena& GetArena() const { return m_Arena; }
         EventBus& GetEventBus() { return m_EventBus; }
+        ResourceManager& GetResourceManager() { return m_ResourceManager; }
 
         Window* GetWindow() const { return m_Window; }
         Renderer* GetRenderer() const { return m_Renderer; }
@@ -38,6 +40,7 @@ namespace Mango {
 
         Arena& m_Arena;
         EventBus m_EventBus;
+        ResourceManager m_ResourceManager;
 
         Application* m_App = nullptr;
         Window* m_Window = nullptr;

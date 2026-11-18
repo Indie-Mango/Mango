@@ -17,7 +17,9 @@ namespace Mango {
     using S16 = std::int16_t;
     using S32 = std::int32_t;
     using S64 = std::int64_t;
-    
+
+    using ResourceHandle = U64;
+
     using PipelineHandle = U64;
     using MaterialHandle = U64;
 } // namespace Mango

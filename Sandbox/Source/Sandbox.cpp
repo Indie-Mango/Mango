@@ -23,47 +23,80 @@ namespace {
 
             Mango::Renderer* renderer = engine->GetRenderer();
 
-            Mango::VertexBufferLayout vertexBufferLayout = {
-                    Mango::ShaderDataType::Float3, // position
-                    Mango::ShaderDataType::Float2, // texCoord
-            };
+            Mango::ResourceManager& resourceManager = engine->GetResourceManager();
+            Mango::ResourceHandle pictureResource =
+                    resourceManager.CreateResource<Mango::Picture>("Sandbox/Assets/Textures/Smiley.png");
+            if (!resourceManager.LoadResource(pictureResource))
+            {
+                MANGO_EXIT_PROGRAM();
+            }
 
-            Mango::F32 vertices[]{
-                    -0.5f, 0.5f,  0.0f, 0.0f, 0.0f, // TOP - LEFT
-                    -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, // BOTTOM - LEFT
-                    0.5f,  -0.5f, 0.0f, 1.0f, 1.0f, // BOTTOM - RIGHT
-                    0.5f,  0.5f,  0.0f, 1.0f, 0.0f // TOP - RIGHT
-            };
-
-            std::vector<Mango::U32> indices = {
-                    0, 1, 2, // 1
-                    2, 3, 0 // 2
-            };
-
-            m_VertexBuffer = Mango::VertexBuffer::Create(engine->GetRenderer(), vertexBufferLayout,
-                                                         sizeof(vertices) / vertexBufferLayout.Stride, vertices);
-            m_IndexBuffer = Mango::IndexBuffer::Create(engine->GetRenderer(), indices);
+            m_Texture = Mango::Texture{engine, pictureResource};
+            resourceManager.Release(pictureResource);
 
             Mango::PipelineInfo pipelineInfo;
-            pipelineInfo.VertexBufferLayout = vertexBufferLayout;
 
             // clang-format off
             Mango::PipelineLayout layout{
-                .DescriptorSets = {
+            .DescriptorSets = {
+            // Set 0: Renderer / Scene
+            {
+                .Descriptors = {
                     {
-                        .Descriptors = {
-                            {.Binding = 0, .Type = Mango::PipelineDescriptorType::UniformBuffer},
-                        },
-                        .Set = 0,
-                        .Stage = Mango::PipelineStage::Vertex
-                    },
+                        .Binding = 0,
+                        .Type = Mango::PipelineDescriptorType::UniformBuffer
+                    }, // Camera
+
                     {
-                        .Descriptors = {
-                            {.Binding = 0, .Type = Mango::PipelineDescriptorType::Texture}
-                        },
-                        .Set = 1,
-                        .Stage = Mango::PipelineStage::Fragment
-                    }
+                        .Binding = 1,
+                        .Type = Mango::PipelineDescriptorType::UniformBuffer
+                    }, // Object / Model
+
+                    {
+                        .Binding = 2,
+                        .Type = Mango::PipelineDescriptorType::UniformBuffer
+                    }, // Lights
+                },
+                .Set = 0,
+                .Stage = Mango::PipelineStage::All
+            },
+
+            // Set 1: Material
+            {
+                .Descriptors = {
+                    {
+                        .Binding = 0,
+                        .Type = Mango::PipelineDescriptorType::UniformBuffer
+                    }, // Material PBR properties
+
+                    {
+                        .Binding = 1,
+                        .Type = Mango::PipelineDescriptorType::Texture
+                    }, // Base color
+
+                    {
+                        .Binding = 2,
+                        .Type = Mango::PipelineDescriptorType::Texture
+                    }, // Metallic / Roughness
+
+                    {
+                        .Binding = 3,
+                        .Type = Mango::PipelineDescriptorType::Texture
+                    }, // Normal map
+
+                    {
+                        .Binding = 4,
+                        .Type = Mango::PipelineDescriptorType::Texture
+                    }, // Occlusion
+
+                    {
+                        .Binding = 5,
+                        .Type = Mango::PipelineDescriptorType::Texture
+                    }, // Emissive
+                },
+                .Set = 1,
+                .Stage = Mango::PipelineStage::Fragment
+            }
                 }
             };
             // clang-format on
@@ -75,20 +108,12 @@ namespace {
 
             Mango::File vertShader{"Sandbox/Assets/Shaders/Basic.vert", Mango::FileMode::Read};
             Mango::File fragShader{"Sandbox/Assets/Shaders/Basic.frag", Mango::FileMode::Read};
-            m_pipeline = pipelineManager.CreatePipeline(engine->GetRenderer(), pipelineInfo, vertShader, fragShader);
-            m_Material = materialManager.CreateMaterial(engine->GetRenderer(), m_pipeline);
+            m_pbrPipeline = pipelineManager.CreatePipeline(engine->GetRenderer(), pipelineInfo, vertShader, fragShader);
+
+            m_Material = materialManager.CreateMaterial(engine->GetRenderer(), m_pbrPipeline);
             m_UniformBuffer = Mango::UniformBuffer::Create(engine->GetRenderer(), 3 * sizeof(glm::mat4));
             materialManager.SetUniformBuffer(m_Material, 0, 0, m_UniformBuffer);
-
-            m_Texture = Mango::Texture{engine->GetRenderer(), "Sandbox/Assets/Textures/Smiley.png"};
             materialManager.SetTexture(m_Material, 1, 0, m_Texture);
-
-            m_Material2 = materialManager.CreateMaterial(engine->GetRenderer(), m_pipeline);
-            m_UniformBuffer2 = Mango::UniformBuffer::Create(engine->GetRenderer(), 3 * sizeof(glm::mat4));
-            materialManager.SetUniformBuffer(m_Material2, 0, 0, m_UniformBuffer2);
-
-            m_Texture2 = Mango::Texture{engine->GetRenderer(), "Sandbox/Assets/Textures/NoTexture.png"};
-            materialManager.SetTexture(m_Material2, 1, 0, m_Texture2);
 
             Mango::Window* window = engine->GetWindow();
             m_MVP.Proj = glm::perspectiveZO(
@@ -97,15 +122,13 @@ namespace {
             m_MVP.View[1][1] *= -1;
 
             m_MVP.Model = glm::translate(glm::mat4{1.0f}, {0.0f, 0.0f, -5.0f});
-            m_UniformBuffer2->Write(&m_MVP, sizeof(m_MVP));
         }
 
         ~Sandbox() override
         {
-            m_Engine->GetRenderer()->GetMaterialManager().Release(m_Material2);
             m_Engine->GetRenderer()->GetMaterialManager().Release(m_Material);
-            
-            m_Engine->GetRenderer()->GetPipelineManager().Release(m_pipeline);
+
+            m_Engine->GetRenderer()->GetPipelineManager().Release(m_pbrPipeline);
         }
 
         void Update(Mango::F32 ts) override
@@ -130,16 +153,9 @@ namespace {
             Mango::MaterialManager& materialManager = renderer->GetMaterialManager();
             materialManager.UpdateMaterials();
 
-            renderer->SetVertexBuffer(m_VertexBuffer);
-            renderer->SetIndexBuffer(m_IndexBuffer);
-            renderer->SetPipeline(m_pipeline);
+            renderer->SetPipeline(m_pbrPipeline);
 
             materialManager.Bind(m_Material);
-
-            renderer->DrawIndexed(m_IndexBuffer->GetIndexCount());
-
-            materialManager.Bind(m_Material2);
-            renderer->DrawIndexed(m_IndexBuffer->GetIndexCount());
         }
 
         void ImGuiRender(Mango::F32 ts) const override
@@ -152,15 +168,10 @@ namespace {
     private:
         Mango::EventConnection<Mango::WindowClosedEvent> m_WindowClosedConnection;
 
-        Mango::Shared<Mango::VertexBuffer> m_VertexBuffer;
-        Mango::Shared<Mango::IndexBuffer> m_IndexBuffer;
-        Mango::PipelineHandle m_pipeline;
+        Mango::PipelineHandle m_pbrPipeline;
         Mango::MaterialHandle m_Material;
-        Mango::MaterialHandle m_Material2;
         Mango::Shared<Mango::UniformBuffer> m_UniformBuffer;
-        Mango::Shared<Mango::UniformBuffer> m_UniformBuffer2;
         Mango::Texture m_Texture;
-        Mango::Texture m_Texture2;
         MVP m_MVP;
 
         glm::vec3 m_Position{0.0f};

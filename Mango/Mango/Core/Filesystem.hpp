@@ -72,7 +72,7 @@ namespace Mango {
         std::vector<U8> ReadAll();
 
         const std::filesystem::path& GetPath() const { return m_Path; }
-        const std::string& String() const { return m_Path.string(); }
+        std::string String() const { return m_Path.string(); }
 
     private:
         std::filesystem::path m_Path;

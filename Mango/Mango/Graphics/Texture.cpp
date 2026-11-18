@@ -1,20 +1,17 @@
 ﻿#include "Texture.hpp"
 
-#define STB_IMAGE_IMPLEMENTATION
 #include "Mango/Debug/Profile.hpp"
-
-#include <stb_image.h>
+#include "Mango/Main/Engine.hpp"
+#include "Mango/Resource/Resource.hpp"
+#include "Mango/Resource/ResourceManager.hpp"
 
 namespace Mango {
-    Texture::Texture(Renderer* renderer, const Path& path)
+    Texture::Texture(Engine* engine, ResourceHandle picture)
     {
         MANGO_PROFILE_SCOPE()
 
-        int w, h, c;
-        U8* pixels = stbi_load(path.string().c_str(), &w, &h, &c, STBI_rgb_alpha);
-
-        m_Image = Image::Create(renderer, w, h, ImageFormat::RGBA8Srgb, ImageType::Color, ImageUsage::Texture, pixels);
-
-        stbi_image_free(pixels);
+        auto* rawPicture = reinterpret_cast<Picture*>(engine->GetResourceManager().ToRaw(picture));
+        m_Image = Image::Create(engine->GetRenderer(), rawPicture->Width, rawPicture->Height, ImageFormat::RGBA8Srgb, ImageType::Color,
+                                ImageUsage::Texture, rawPicture->Data);
     }
 } // namespace Mango

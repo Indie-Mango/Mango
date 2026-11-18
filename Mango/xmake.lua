@@ -10,6 +10,7 @@ add_requires("glfw")
 add_requires("glm")
 
 add_requires("stb")
+add_requires("fastgltf")
 
 add_requires("imgui v1.92.9-docking", {
     configs = {
@@ -31,6 +32,7 @@ target("Mango-Driver")
     add_packages("glfw", {public = true})
     add_packages("glm", {public = true})
     add_packages("stb", {public = true})
+    add_packages("fastgltf", {public = true})
     add_packages("imgui", {public = true})
 
     if is_mode("debug") then

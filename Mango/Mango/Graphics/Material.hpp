@@ -5,7 +5,7 @@
 
 namespace Mango {
     class UniformBuffer;
-    
+
     class Material
     {
     public:
